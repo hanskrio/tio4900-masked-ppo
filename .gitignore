@@ -398,3 +398,42 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+## Additional ignores for a Python ML project
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Hydra output directories (if using Hydra for configuration)
+outputs/
+logs/
+
+# Data files and caches (adjust as needed)
+data/
+cache/
+
+# Optional: ignore large model checkpoint files
+*.ckpt
+*.pt
+*.pth
