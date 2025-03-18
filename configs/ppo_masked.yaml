@@ -1,0 +1,14 @@
+# Example specialized config for MaskablePPO
+model:
+  type: "MaskablePPO"
+  policy: "MlpPolicy"
+
+env:
+  # If needed, override environment specifics here
+  # url: ...
+  # actions: ...
+  # etc.
+  
+training:
+  total_timesteps: 500000   # override default
+  # Possibly override any other hyperparameters
