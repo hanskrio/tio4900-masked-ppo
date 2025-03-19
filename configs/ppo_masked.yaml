@@ -1,14 +1,11 @@
-# Example specialized config for MaskablePPO
+# Example specialized config for a masked PPO run
 model:
-  type: "MaskablePPO"
-  policy: "MlpPolicy"
-
-env:
-  # If needed, override environment specifics here
-  # url: ...
-  # actions: ...
-  # etc.
+  type: "maskable_ppo"
   
+# Possibly override some default environment settings if you need
+env:
+  url: "http://some_remote_cluster:5012" 
+  step_period: 3600  # 60 minute step
+
 training:
-  total_timesteps: 500000   # override default
-  # Possibly override any other hyperparameters
+  total_timesteps: 1_000_000
