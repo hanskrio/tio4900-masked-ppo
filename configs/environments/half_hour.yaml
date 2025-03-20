@@ -1,0 +1,24 @@
+# standard environment configuration
+# only difference is the step period (which is now half an hour)
+url: "http://localhost:5001"
+actions: ["oveHeaPumY_u"]
+observations:
+  time: [0, 604800]
+  reaTZon_y: [280.0, 310.0]
+  TDryBul: [265, 303]
+  HDirNor: [0, 862]
+  InternalGainsRad[1]: [0, 219]
+  PriceElectricPowerHighlyDynamic: [-0.4, 0.4]
+  LowerSetp[1]: [280.0, 310.0]
+  UpperSetp[1]: [280.0, 310.0]
+predictive_period: 86400
+regressive_period: 21600
+max_episode_length: 1209600
+warmup_period: 86400
+scenario:
+  electricity_price: "dynamic"
+step_period: 1800
+excluding_periods:
+  - [1382400, 2592000]     # peak heating period
+  - [9331200, 10540800]    # typical heating period
+  - [14947200, 22982400]   # summer period (nothing to learn since there is no heating required)
