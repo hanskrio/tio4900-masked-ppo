@@ -1,6 +1,6 @@
 import os
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
-from envs.custom_boptest_env import make_boptest_env
+from envs.boptest_env import make_boptest_env
 from src.models.factory import create_model
 
 def run_experiment(cfg, device):
