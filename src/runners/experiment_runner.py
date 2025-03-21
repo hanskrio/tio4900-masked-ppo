@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
 from envs.boptest_env import make_boptest_env
 from src.models.factory import create_model
@@ -12,7 +13,14 @@ def run_experiment(cfg, device):
 
     # Train
     model.learn(total_timesteps=cfg.training.total_timesteps)
-    model.save("trained_model")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_dir = os.path.join(os.getcwd(), timestamp)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_path = os.path.join(save_dir, "trained_model.zip")
+    model.save(save_path)
+    print(f"Model saved at: {save_path}")
 
     # Evaluate
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=5, warn=False)
