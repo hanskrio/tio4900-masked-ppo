@@ -1,11 +1,3 @@
 # Example specialized config for a masked PPO run
 model:
   type: "maskable_ppo"
-  
-# Possibly override some default environment settings if you need
-env:
-  url: "http://some_remote_cluster:5012" 
-  step_period: 3600  # 60 minute step
-
-training:
-  total_timesteps: 1_000

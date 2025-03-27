@@ -1,0 +1,10 @@
+# Training hyperparameters
+total_timesteps: 10_000
+
+# Model hyperparameters (conceptually training-related)
+model:
+  policy: "MlpPolicy"
+  gamma: 0.99
+  learning_rate: 5e-4
+  verbose: 1
+  seed: 4
