@@ -23,4 +23,4 @@ model:
   seed: 4
 
 training:
-  total_timesteps: 1_000
+  total_timesteps: 10_000

@@ -17,6 +17,6 @@ def make_boptest_env(env_cfg):
     )
     
     env = NormalizedObservationWrapper(env)
-    env = DiscretizedActionWrapper(env, n_bins_act=10)
+    env = DiscretizedActionWrapper(env, n_bins_act=20)
 
     return env

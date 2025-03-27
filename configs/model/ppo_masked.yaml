@@ -8,4 +8,4 @@ env:
   step_period: 3600  # 60 minute step
 
 training:
-  total_timesteps: 1_000_000
+  total_timesteps: 1_000
