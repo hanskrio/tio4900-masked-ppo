@@ -8,5 +8,3 @@ defaults:
 hydra:
   run:
     dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
-  launcher:
-    name: submitit_slurm

@@ -1,8 +1,11 @@
+import os
+import sys
+
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
 
-@hydra.main(version_base=None, config_path="../configs", config_name="default")
+@hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
     # Print the resolved config
     print(OmegaConf.to_yaml(cfg))

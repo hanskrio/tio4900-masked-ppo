@@ -3,7 +3,7 @@ import numpy as np
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
 
 def make_boptest_env(env_cfg):
-    base_env = BoptestGymEnv(
+    env = BoptestGymEnv(
         url=env_cfg.url,
         actions=env_cfg.actions,
         observations=env_cfg.observations,
