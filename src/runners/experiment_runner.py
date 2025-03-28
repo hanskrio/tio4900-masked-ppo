@@ -6,10 +6,10 @@ from src.models.factory import create_model
 
 def run_experiment(cfg, device):
     # Create your environment
-    env = make_boptest_env(cfg.env)
+    env = make_boptest_env(cfg.environments)
 
     # Create model based on config
-    model = create_model(cfg.model, env, device)
+    model = create_model(cfg.model, cfg.training, env, device)
 
     # Train
     model.learn(total_timesteps=cfg.training.total_timesteps)
@@ -38,5 +38,6 @@ def run_experiment(cfg, device):
 
     if hasattr(env, "get_kpis"):
         print("KPIs:", env.get_kpis())
+
 
     
