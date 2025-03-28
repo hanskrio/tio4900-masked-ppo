@@ -1,3 +1,2 @@
-# Example specialized config for a masked PPO run
 model:
   type: "maskable_ppo"

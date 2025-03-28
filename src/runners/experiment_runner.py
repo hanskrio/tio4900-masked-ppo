@@ -9,7 +9,7 @@ def run_experiment(cfg, device):
     env = make_boptest_env(cfg.environments)
 
     # Create model based on config
-    model = create_model(cfg.model, env, device)
+    model = create_model(cfg.model, cfg.training, env, device)
 
     # Train
     model.learn(total_timesteps=cfg.training.total_timesteps)

@@ -20,12 +20,12 @@ def create_model(model_cfg, training_cfg, env, device):
 
     elif model_type == "ppo":
         return PPO(
-            policy=model_cfg.policy,
+            policy=training_cfg.policy,
             env=env,
-            gamma=model_cfg.gamma,
-            learning_rate=model_cfg.learning_rate,
-            verbose=model_cfg.verbose,
-            seed=model_cfg.seed,
+            gamma=training_cfg.gamma,
+            learning_rate=training_cfg.learning_rate,
+            verbose=training_cfg.verbose,
+            seed=training_cfg.seed,
             device=device
         )
 
