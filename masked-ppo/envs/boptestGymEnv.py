@@ -466,7 +466,10 @@ class BoptestGymEnv(gym.Env):
         requests.put('{0}/step'.format(self.url), json={'step':int(self.step_period)})
         
         # Set BOPTEST scenario
-        requests.put('{0}/scenario'.format(self.url), json=self.scenario)
+        from omegaconf import OmegaConf
+
+        scenario_dict = OmegaConf.to_container(self.scenario, resolve=True)
+        requests.put('{0}/scenario'.format(self.url), json=scenario_dict)
         
         # Initialize objective integrand
         self.objective_integrand = 0.

@@ -1,6 +1,6 @@
 # envs/boptest_env.py
 import numpy as np
-from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
+from .boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
 
 def make_boptest_env(env_cfg):
     env = BoptestGymEnv(

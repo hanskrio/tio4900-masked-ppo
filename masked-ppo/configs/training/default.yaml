@@ -1,1 +1,6 @@
-total_timesteps: 10000  # Small number for testing
+total_timesteps: 10_000  # Small number for testing
+policy: 'MlpPolicy'
+gamma: 0.99
+learning_rate: 0.0003
+verbose: 1
+seed: 42

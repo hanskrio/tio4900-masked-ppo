@@ -5,7 +5,7 @@ from stable_baselines3 import PPO
 
 def create_model(model_cfg, training_cfg, env, device):
     """Factory method that returns a model instance based on configs."""
-    model_type = model_cfg.type.lower()
+    model_type = model_cfg.model.type.lower()
 
     if model_type == "maskable_ppo":
         return MaskablePPO(

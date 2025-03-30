@@ -5,6 +5,11 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
 
+# Get the absolute path to the project root
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Add the project root to the Python path
+sys.path.insert(0, project_root)
+
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
     # Print the resolved config
