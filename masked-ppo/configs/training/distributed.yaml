@@ -4,4 +4,4 @@ distributed:
   enabled: true
   backend: "nccl"
   world_size: 4
-  num_envs_per_gpu: 32
+  num_envs_per_gpu: 4
