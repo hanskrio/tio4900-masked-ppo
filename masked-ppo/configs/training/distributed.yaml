@@ -1,0 +1,7 @@
+total_timesteps: 10000  # Small number for testing
+
+distributed:
+  enabled: true
+  backend: "nccl"
+  world_size: 4
+  num_envs_per_gpu: 4  # Just 4 environments per GPU for testing
