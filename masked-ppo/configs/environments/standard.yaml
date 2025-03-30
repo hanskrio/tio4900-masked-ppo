@@ -3,6 +3,7 @@
 # The environment is configured to have a predictive period of 24 hours and a regressive period of 6 hours.
 # The environment is configured to have a maximum episode length of 14 days (1209600 seconds).
 # The environment is configured to have a warmup period of 24 hours (86400 seconds).
+vectorized: false
 
 url: "http://localhost:5001"
 actions: ["oveHeaPumY_u"]
