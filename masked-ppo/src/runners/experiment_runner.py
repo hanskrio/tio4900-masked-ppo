@@ -4,9 +4,20 @@ from sb3_contrib.common.maskable.evaluation import evaluate_policy
 from envs.boptest_env import make_boptest_env
 from src.models.factory import create_model
 
-def run_experiment(cfg, device):
+def run_experiment(cfg, device):   
+    test_ids = [
+    "7e1c7225-8419-4df1-87e0-97e2df128a40",
+    "5376c733-5d87-4524-99a5-9447547dbd25",
+    "a6180b5b-034c-40c5-ba6e-38837535eb7d",
+    "15233da6-d74b-419e-95e2-1d6c34e10d1b",
+    "45f7570d-47dd-4833-a728-6b9c4be4e1d3",
+    "d9ebf2a3-c137-40a5-a2c2-7224b11f423b",
+    "32bff44f-01fe-42f9-8c55-391af5660ccd",
+    "eac170a0-3251-4d9f-b1ee-b8e8bbcfbde1"
+]
     # Create your environment
-    env = make_boptest_env(cfg.environments)
+    env = make_boptest_env(cfg.environments, test_ids=test_ids)
+
 
     # Create model based on config
     model = create_model(cfg.model, cfg.training, env, device)

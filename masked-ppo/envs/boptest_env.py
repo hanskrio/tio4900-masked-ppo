@@ -3,27 +3,25 @@ import numpy as np
 from .boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 
-def make_env(env_cfg, rank, seed=0):
+def make_env(env_cfg, rank, seed=0, test_ids=None):
     """
-    Helper function to create a single environment with a unique seed.
-    
-    Args:
-        env_cfg: Environment configuration
-        rank: Unique identifier for this environment instance
-        seed: Base seed to modify for this specific environment
-    
-    Returns:
-        A function that creates and returns an environment when called
+    Helper function with pre-obtained testIDs.
     """
     def _init():
         # Set a unique seed for this environment instance
         env_seed = seed + rank
         
+        # Parse the base URL
         base_url = env_cfg.url.split(':')[0] + '://' + env_cfg.url.split(':')[1].split('/')[0]
-
-        # Create the base environment
+        
+        # Use the pre-obtained testID for this rank
+        testid = test_ids[rank]
+        print(f"Environment {rank}: using testid {testid}")
+        
+        # Create the base environment with the testid
         base_env = BoptestGymEnv(
             url=base_url,
+            testid=testid,  # Pass the testid to the environment
             actions=env_cfg.actions,
             observations=env_cfg.observations,
             predictive_period=env_cfg.predictive_period,
@@ -35,7 +33,7 @@ def make_env(env_cfg, rank, seed=0):
             excluding_periods=env_cfg.excluding_periods,
         )
         
-        # Set the seed on the base environment if it has a seed method
+        # This seed handling is important - keep it!
         if hasattr(base_env, 'seed'):
             base_env.seed(env_seed)
         elif hasattr(base_env, 'reset'):
@@ -47,37 +45,34 @@ def make_env(env_cfg, rank, seed=0):
         env = NormalizedObservationWrapper(base_env)
         env = DiscretizedActionWrapper(env, n_bins_act=20)
         
-        # In newer Gym versions, we might need to seed during reset
-        # This will be handled by stable-baselines3
-        
         return env
     
     return _init
 
-def make_boptest_env(env_cfg):
+def make_boptest_env(env_cfg, test_ids=None):
     """
-    Factory method that creates either a single environment or a vectorized environment
-    based on configuration.
+    Factory method that creates a vectorized environment based on configuration.
     
     Args:
         env_cfg: Environment configuration from yaml
-        
+        test_ids: Optional list of test IDs to use for each environment
+    
     Returns:
         A Gym environment or a vectorized environment
     """
     # Check if vectorization is enabled
     vectorized = getattr(env_cfg, 'vectorized', False)
-    
+
     if vectorized:
         # Get number of environments and base seed
         num_envs = getattr(env_cfg, 'num_envs', 4)
         seed = getattr(env_cfg, 'seed', 0)
-        
+
         print(f"Creating vectorized environment with {num_envs} parallel environments")
-        
+
         # Create a list of environment creation functions
-        env_fns = [make_env(env_cfg, i, seed) for i in range(num_envs)]
-        
+        env_fns = [make_env(env_cfg, i, seed, test_ids) for i in range(num_envs)]
+
         # Create vectorized environment
         return SubprocVecEnv(env_fns)
     else:

@@ -3,7 +3,7 @@ vectorized: true
 num_envs: 8  # Start with a small number for local testing
 seed: 42  # Base seed, will be incremented for each environment
 
-url: "http://localhost:5001"
+url: "http://localhost"
 actions: ["oveHeaPumY_u"]
 observations:
   time: [0, 604800]
