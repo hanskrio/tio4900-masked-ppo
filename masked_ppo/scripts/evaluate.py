@@ -1,9 +1,11 @@
+import logging
 import os
 import sys
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch
 
+# Set up logging
+log = logging.getLogger(__name__)
 # Add project root to path if needed
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
@@ -12,12 +14,12 @@ from envs.boptest_env import make_boptest_env
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
-    print("=== EVALUATION MODE ===")
-    print("Resolved config:\n", OmegaConf.to_yaml(cfg))
+    log.info("=== EVALUATION MODE ===")
+    log.info("Resolved config:\n", OmegaConf.to_yaml(cfg))
 
     # Determine device
     device = "cpu"
-    print(f"Using device: {device}")
+    log.info(f"Using device: {device}")
 
     # 1. Create the environment
     env = make_boptest_env(cfg.environments)
@@ -31,16 +33,16 @@ def main(cfg: DictConfig):
         from sb3_contrib import MaskablePPO
         from sb3_contrib.common.maskable.evaluation import evaluate_policy
         model = MaskablePPO.load(model_path, env=env, device=device)
-        print(f"Loaded MaskablePPO from {model_path}")
+        log.info(f"Loaded MaskablePPO from {model_path}")
     else:
         from stable_baselines3 import PPO
         from stable_baselines3.common.evaluation import evaluate_policy
         model = PPO.load(model_path, env=env, device=device)
-        print(f"Loaded PPO from {model_path}")
+        log.info(f"Loaded PPO from {model_path}")
 
     # 4. Evaluate for 5 episodes
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=5, warn=False)
-    print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
+    log.info(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
     # 5. Optional: custom inference loop to get KPIs or do specific logging
     obs, info = env.reset()
@@ -53,7 +55,7 @@ def main(cfg: DictConfig):
         done = done or truncated
 
     if hasattr(env, "get_kpis"):
-        print("KPIs:", env.get_kpis())
+        log.info("KPIs:", env.get_kpis())
 
     env.close()
 
