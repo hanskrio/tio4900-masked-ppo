@@ -1,0 +1,3 @@
+- environments=vectorized
+- model=ppo
+- training=default

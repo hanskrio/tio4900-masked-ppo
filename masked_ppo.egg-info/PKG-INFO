@@ -1,0 +1,4 @@
+Metadata-Version: 2.1
+Name: masked_ppo
+Version: 0.1.0
+Summary: Masked PPO implementation for BOPTEST
