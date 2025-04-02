@@ -1,0 +1,8 @@
+# configs/hydra/local.yaml
+# Inherits from base and adds local-specific settings
+defaults:
+  - base
+
+hydra:
+  # Any local-specific overrides would go here
+  # Local mode just uses the base configuration
