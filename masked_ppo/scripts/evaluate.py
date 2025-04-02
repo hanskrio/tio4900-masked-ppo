@@ -15,7 +15,7 @@ from envs.boptest_env import make_boptest_env
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
     log.info("=== EVALUATION MODE ===")
-    log.info("Resolved config:\n", OmegaConf.to_yaml(cfg))
+    print("Resolved config:\n", OmegaConf.to_yaml(cfg))
 
     # Determine device
     device = "cpu"
@@ -55,7 +55,7 @@ def main(cfg: DictConfig):
         done = done or truncated
 
     if hasattr(env, "get_kpis"):
-        log.info("KPIs:", env.get_kpis())
+        log.info(f"KPIs: {env.get_kpis()}")
 
     env.close()
 
