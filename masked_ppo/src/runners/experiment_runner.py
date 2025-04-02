@@ -3,15 +3,19 @@ from datetime import datetime
 from sb3_contrib.common.maskable.evaluation import evaluate_policy
 from envs.boptest_env import make_boptest_env
 from src.models.factory import create_model
+from src.utils.logging_utils import setup_sb3_logger  
 
 def run_experiment(cfg, device):   
     # Create your environment
     env = make_boptest_env(cfg.environments)
 
-
     # Create model based on config
     model = create_model(cfg.model, cfg.training, env, device)
-
+    
+    # Set up and attach the SB3 logger
+    sb3_logger = setup_sb3_logger(os.getcwd())
+    model.set_logger(sb3_logger)
+    
     # Train
     model.learn(total_timesteps=cfg.training.total_timesteps)
     
