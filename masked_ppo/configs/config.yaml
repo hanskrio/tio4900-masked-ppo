@@ -1,10 +1,6 @@
 defaults:
-  - environments: standard  # or vectorized depending on what you need
+  - environments: standard 
   - model: ppo_masked
   - training: default
-  - _self_  # This allows values in this file to override the above
-
-# Hydra settings for submitit Slurm
-hydra:
-  run:
-    dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
+  - hydra: local 
+  - _self_
