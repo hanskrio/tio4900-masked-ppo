@@ -53,8 +53,11 @@ def run_experiment(cfg, device):
     done = False
     logger.info("Starting inference loop")
     while not done:
-        action_masks = info.get("action_mask", None)
-        action, _ = model.predict(obs, action_masks=action_masks, deterministic=True)
+        if cfg.model.type.lower() == "maskable_ppo":
+            action_masks = info.get("action_mask", None)
+            action, _ = model.predict(obs, action_masks=action_masks, deterministic=True)
+        else:
+            action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, truncated, info = env.step(action)
         done = done or truncated
 
