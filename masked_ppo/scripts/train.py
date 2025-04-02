@@ -24,8 +24,6 @@ def main(cfg: DictConfig):
         # Choose device based on availability
         if torch.cuda.is_available():
             device = "cuda"
-        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-            device = "mps"
         else:
             device = "cpu"
         print(f"Using device: {device}")
