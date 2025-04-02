@@ -19,7 +19,7 @@ def main(cfg: DictConfig):
 
     # Determine device
     device = "cpu"
-    log.info(f"Using device: {device}")
+    print(f"Using device: {device}")
 
     # 1. Create the environment
     env = make_boptest_env(cfg.environments)
