@@ -1,4 +1,4 @@
-total_timesteps: 10000  # Small number for testing
+total_timesteps: 10_000  # Small number for testing
 
 distributed:
   enabled: true

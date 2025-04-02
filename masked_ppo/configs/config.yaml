@@ -2,5 +2,10 @@ defaults:
   - environments: standard 
   - model: ppo_masked
   - training: default
-  - hydra: local 
+  - override hydra/job_logging: custom  
   - _self_
+
+
+hydra:
+  run:
+    dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}

@@ -1,31 +1,29 @@
-# configs/hydra/base.yaml
-hydra:
-  run:
-    dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
-  
-  # Enable output capturing
-  job:
-    stdout_capture: true
-    stderr_capture: true
-  
-  # Configure what gets stored in the .hydra directory
-  output_subdir: .hydra
-  
-  # Basic job logging configuration
-  job_logging:
-    version: 1
-    formatters:
-      simple:
-        format: '%(message)s'
-    handlers:
-      console:
-        class: logging.StreamHandler
-        formatter: simple
-        stream: ext://sys.stdout
-      file:
-        class: logging.FileHandler
-        formatter: simple
-        filename: ${hydra.job.name}.log
-    root:
-      level: INFO
-      handlers: [console, file]
+run:
+  dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
+
+# Enable output capturing
+job:
+  stdout_capture: true
+  stderr_capture: true
+
+# Configure what gets stored in the .hydra directory
+output_subdir: .hydra
+
+# Basic job logging configuration
+job_logging:
+  version: 1
+  formatters:
+    simple:
+      format: '%(message)s'
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: simple
+      stream: ext://sys.stdout
+    file:
+      class: logging.FileHandler
+      formatter: simple
+      filename: ${hydra.job.name}.log
+  root:
+    level: INFO
+    handlers: [console, file]
