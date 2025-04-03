@@ -1,0 +1,4 @@
+# configs/hydra/local.yaml
+# Inherits from base and adds local-specific settings
+defaults:
+  - base

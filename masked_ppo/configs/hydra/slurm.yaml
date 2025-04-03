@@ -1,0 +1,22 @@
+# configs/hydra/slurm.yaml
+# Inherits from base and adds Slurm-specific settings
+defaults:
+  - base
+
+hydra:
+  # Enable Submitit Slurm launcher
+  launcher:
+    _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
+    submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+    
+    # Default Slurm parameters
+    partition: gpu
+    cpus_per_task: 4
+    gpus_per_node: 1
+    timeout_min: 60
+    mem_gb: 16
+    nodes: 1
+    
+    # Additional Slurm settings
+    slurm_additional_parameters:
+      account: your_account  # Replace with your actual account
