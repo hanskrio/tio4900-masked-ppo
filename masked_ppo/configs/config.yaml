@@ -1,9 +1,7 @@
 defaults:
-  - environments: standard 
-  - model: ppo_masked
+  - environments: vectorized 
+  - model: ppo
   - training: default
-  - override hydra/job_logging: custom  
-  - _self_
 
 
 hydra:
