@@ -1,20 +1,19 @@
 run:
   dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
 
-# Enable output capturing
-job:
-  stdout_capture: true
-  stderr_capture: true
+#job:
+#  stdout_capture: true
+#  stderr_capture: true
 
-# Configure what gets stored in the .hydra directory
 output_subdir: .hydra
 
-# Basic job logging configuration
+# --- Use the CUSTOM logging config as the BASE ---
 job_logging:
   version: 1
   formatters:
     simple:
-      format: '%(message)s'
+      # Use the format from custom.yaml
+      format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
   handlers:
     console:
       class: logging.StreamHandler
@@ -23,7 +22,16 @@ job_logging:
     file:
       class: logging.FileHandler
       formatter: simple
-      filename: ${hydra.job.name}.log
+      # Use the filename structure from custom.yaml
+      filename: ${hydra.runtime.output_dir}/train.log
+      mode: a
   root:
     level: INFO
     handlers: [console, file]
+  disable_existing_loggers: false
+# -----------------------------------------------
+
+# Default launcher (can be overridden by local.yaml/slurm.yaml if they define one)
+# If local just inherits base, this launcher applies for local runs.
+launcher:
+  _target_: hydra._internal.core_plugins.basic_launcher.BasicLauncher

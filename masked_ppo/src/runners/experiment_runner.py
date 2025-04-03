@@ -6,7 +6,6 @@ from stable_baselines3.common.vec_env import VecEnv  # Import VecEnv
 from envs.boptest_env import make_boptest_env
 from src.models.factory import create_model
 from stable_baselines3.common.logger import configure
-from src.callbacks.episode_logger_callback import EpisodeLoggerCallback 
 
 
 # Get a logger for this module
@@ -33,14 +32,11 @@ def run_experiment(cfg, device):
     model.set_logger(sb3_logger)
     logger.info("Model created and SB3 logger configured")
 
-    # Create the callback
-    episode_callback = EpisodeLoggerCallback(verbose=1) 
 
     # Train (pass callback to learn method)
     logger.info(f"Starting training for {cfg.training.total_timesteps} timesteps")
     model.learn(
         total_timesteps=cfg.training.total_timesteps,
-        callback=episode_callback
     )
     logger.info("Training completed")
 

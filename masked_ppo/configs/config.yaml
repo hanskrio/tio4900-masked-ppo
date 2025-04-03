@@ -1,8 +1,9 @@
 defaults:
-  - environments: vectorized 
+  - environments: vectorized
   - model: ppo
   - training: default
-
+  - hydra: base    
+  - _self_
 
 hydra:
   run:
