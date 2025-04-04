@@ -12,6 +12,7 @@ class EpisodeLoggerCallback(BaseCallback):
     def __init__(self, verbose=0, window_size=100):
         super().__init__(verbose)
         # Stores rewards and lengths of last 'window_size' episodes
+        print("--- EpisodeLoggerCallback Initialized ---") 
         self.ep_rew_buffer = deque(maxlen=window_size)
         self.ep_len_buffer = deque(maxlen=window_size)
         # --- Optional: Track best reward and save best model ---
@@ -25,6 +26,7 @@ class EpisodeLoggerCallback(BaseCallback):
         Record dummy values to ensure CSV/Tensorboard headers are created.
         Also determine where to save the best model if tracking.
         """
+        print("--- Callback: _on_training_start ---")
         self.logger.record("rollout/ep_rew_mean", 0.0)
         self.logger.record("rollout/ep_len_mean", 0.0)
         # --- Optional: Prepare for saving best model ---
@@ -65,6 +67,7 @@ class EpisodeLoggerCallback(BaseCallback):
         Called at the end of each rollout collection.
         Log the current mean values from the buffers.
         """
+        print("--- Callback: _on_rollout_end ---")
         if len(self.ep_rew_buffer) > 0:
             mean_reward = np.mean(self.ep_rew_buffer)
             mean_length = np.mean(self.ep_len_buffer)
