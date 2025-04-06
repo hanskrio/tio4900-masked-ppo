@@ -1,4 +1,4 @@
-total_timesteps: 30_000  # Small number for testing
+total_timesteps: 50_000  # Remember: samll number for testing
 policy: 'MlpPolicy'
 gamma: 0.99
 learning_rate: 0.0003
