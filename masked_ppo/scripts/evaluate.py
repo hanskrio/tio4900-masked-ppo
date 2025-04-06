@@ -45,14 +45,14 @@ def main(cfg: DictConfig):
     log.info(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
     # 5. Optional: custom inference loop to get KPIs or do specific logging
-    obs, info = env.reset()
+    """ obs, info = env.reset()
     done = False
     while not done:
         # MaskablePPO can use action_mask from info (if your env provides it)
         action_masks = info.get("action_mask", None)
         action, _ = model.predict(obs, action_mask=action_masks, deterministic=True)
         obs, reward, done, truncated, info = env.step(action)
-        done = done or truncated
+        done = done or truncated """
 
     if hasattr(env, "get_kpis"):
         log.info(f"KPIs: {env.get_kpis()}")
