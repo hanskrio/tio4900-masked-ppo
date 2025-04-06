@@ -58,8 +58,8 @@ class EpisodeLoggerCallback(BaseCallback):
                 self.ep_rew_buffer.append(ep_rew)
                 self.ep_len_buffer.append(ep_len)
                 # Keep verbose print minimal unless debugging needed
-                # if self.verbose > 0:
-                #      print(f"Callback: Episode finished: Reward={ep_rew:.2f}, Length={ep_len}")
+                if self.verbose > 0:
+                    print(f"Callback: Episode finished: Reward={ep_rew:.2f}, Length={ep_len}")
         return True
 
     def _on_rollout_end(self) -> None:
