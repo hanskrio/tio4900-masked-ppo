@@ -1,6 +1,6 @@
 # Vectorized environment configuration for testing
 vectorized: true
-num_envs: 8  # Start with a small number for local testing
+num_envs: 4  # Start with a small number for local testing
 seed: 42  # Base seed, will be incremented for each environment
 
 url: "http://127.0.0.1:80"
