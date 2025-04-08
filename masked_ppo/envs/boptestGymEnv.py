@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import random
 import gymnasium as gym
 import requests
+import logging
 import numpy as np
 import pandas as pd
 import inspect
@@ -720,68 +721,251 @@ class BoptestGymEnv(gym.Env):
 
     def get_observations(self, res):
         '''
-        Get the observations, i.e. the conjunction of measurements, 
-        regressive and predictive variables if any. Also transforms 
-        the output to have the right format. 
-        
+        Get the observations, i.e. the conjunction of measurements,
+        regressive and predictive variables if any. Also transforms
+        the output to have the right format, with robust error handling.
+
         Parameters
         ----------
         res: dictionary
             Dictionary mapping simulation variables and their value at the
-            end of the last time step. 
-        
+            end of the last time step (e.g., from /advance or /initialize).
+
         Returns
         -------
-        observations: numpy array
-            Reformatted observations that include measurements and 
-            predictions (if any) at the end of last step. 
-        
+        observations_arr: numpy array
+            Reformatted observations that include measurements and
+            predictions (if any) at the end of last step.
+
+        Raises
+        ------
+        RuntimeError
+            If critical data (like current measurements or fallbacks)
+            is missing, or if fatal errors occur during API calls/processing.
+        KeyError
+            If essential keys are missing in the input 'res' dictionary
+            or API responses where expected.
         '''
-        
-        # Initialize observations
+        # Use logger if defined, otherwise default logging
+        log = getattr(self, 'logger', logging)
+        testid = getattr(self, 'testid', 'UNKNOWN_TESTID') # For logging
+
+        # Initialize observations list
         observations = []
-        
-        # First check for time
-        if 'time' in self.observations:
-            # Time is always the first feature in observations
-            observations.append(res['time']%self.upper_obs_bounds[0]) 
-        
-        # Get measurements at the end of the simulation step
-        for obs in self.measurement_vars:
-            observations.append(res[obs])
-                
-        # Get regressions if this is a regressive agent
+
+        # --- 1. Current Time (Optional) ---
+        # Check if 'time' is one of the configured observations (from init)
+        is_time_observation = 'time' in self.observations
+        if is_time_observation:
+            try:
+                current_time_val = res.get('time')
+                if current_time_val is None:
+                     log.error(f"[{testid}] 'time' key missing in 'res' dict needed for observation.")
+                     raise KeyError("'time' key missing in BOPTEST response 'res'")
+                # Find the index and upper bound for time safely
+                time_idx = self.observations.index('time')
+                time_upper_bound = self.upper_obs_bounds[time_idx]
+                observations.append(current_time_val % time_upper_bound)
+            except (ValueError, IndexError) as e: # Handles index() not found or bounds index issue
+                 log.error(f"[{testid}] Configuration error finding 'time' bounds/index: {e}")
+                 raise RuntimeError(f"Configuration error for 'time' observation: {e}") from e
+            except KeyError as e:
+                 raise e # Re-raise the KeyError from missing 'time' in res
+
+        # --- 2. Current Measurements ---
+        for obs_name in self.measurement_vars:
+            try:
+                current_meas = res[obs_name] # Direct access, expect it in res
+                observations.append(current_meas)
+            except KeyError:
+                log.error(f"[{testid}] Critical measurement '{obs_name}' missing in 'res': {list(res.keys())}")
+                raise KeyError(f"Measurement '{obs_name}' not found in BOPTEST response 'res'")
+
+        # --- 3. Regressive Measurements ---
         if self.is_regressive:
-            regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
+            current_time = res.get('time')
+            if current_time is None:
+                log.error(f"[{testid}] Missing 'time' in 'res' needed for regression.")
+                raise KeyError("'time' key missing in 'res' for regression")
+
+            # Calculate target timestamps for historical data
+            regr_target_times = current_time - self.step_period * np.arange(1, self.regr_n + 1)
+            start_hist = int(regr_target_times[-1]) # Earliest time needed
+            end_hist = int(regr_target_times[0])   # Most recent past time needed
+
+            # Sanity check/adjust time range
+            if start_hist < 0:
+                log.warning(f"[{testid}] Regressive start time {start_hist} is negative. Clamping to 0.")
+                start_hist = 0
+
+            valid_request_range = (start_hist < end_hist)
+
             for var in self.regressive_vars:
-                res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
-                                       json={'point_names':[var],
-                                             'start_time':int(regr_index[-1]), 
-                                             'final_time':int(regr_index[0])}).json()['payload']
-                # fill_value='extrapolate' is needed for the very few cases when
-                # res_var['time'] is not returned to be exactly between 
-                # regr_index[-1] and regr_index[0] but shorter. In these cases
-                # we extrapolate linearly to reach the desired value at the extreme
-                # of the regression period.                              
-                f = interpolate.interp1d(res_var['time'],
-                    res_var[var], kind='linear', fill_value='extrapolate') 
-                res_var_reindexed = f(regr_index)
+                res_var_payload = None
+                res_var_reindexed = None # Final regressive values for this var
+
+                # Get fallback value (current measurement) safely
+                fallback_value = res.get(var) # Use .get for safety
+                if fallback_value is None:
+                    log.warning(f"[{testid}] Fallback value (current) for '{var}' is missing in 'res'. Fallback might fail.")
+
+                # --- API Call ---
+                if valid_request_range:
+                    try:
+                        api_url = f'{self.url}/results/{testid}'
+                        api_payload = {'point_names': [var], 'start_time': start_hist, 'final_time': end_hist}
+                        log.debug(f"[{testid}] Fetching regressive data: URL={api_url}, Payload={api_payload}")
+
+                        # Use self.session if available, otherwise requests directly
+                        requester = getattr(self, 'session', requests)
+                        response = requester.put(
+                            api_url,
+                            json=api_payload,
+                            timeout=20
+                        )
+                        response.raise_for_status()
+                        data = response.json()
+                        res_var_payload = data.get('payload') # Safely get payload
+                        log.debug(f"[{testid}] Received regressive payload for '{var}': Type={type(res_var_payload)}")
+
+                    except requests.exceptions.RequestException as e:
+                        log.error(f"[{testid}] API error fetching regressive data for '{var}': {e}")
+                    except Exception as e: # Catch JSON errors etc.
+                        log.error(f"[{testid}] Error during regressive fetch/parse for '{var}': {e}", exc_info=True)
+                    # On error, res_var_payload remains None, triggers fallback below
+                else:
+                     log.warning(f"[{testid}] Invalid time range ({start_hist} to {end_hist}). Skipping API call for '{var}'.")
+
+                # --- Process Payload & Interpolate (or Fallback) ---
+                data_valid_for_interp = False
+                single_point_value = None
+
+                if res_var_payload is not None and isinstance(res_var_payload, dict) and \
+                   'time' in res_var_payload and var in res_var_payload and \
+                   isinstance(res_var_payload.get('time'), list) and isinstance(res_var_payload.get(var), list):
+                   num_points = len(res_var_payload['time'])
+                   if num_points >= 2:
+                       data_valid_for_interp = True
+                   elif num_points == 1:
+                       single_point_value = res_var_payload[var][0]
+                       log.warning(f"[{testid}] Only 1 point received for regressive '{var}'. Using constant: {single_point_value}")
+                       res_var_reindexed = np.full(self.regr_n, fill_value=single_point_value, dtype=np.float32)
+                   # If num_points == 0, falls through to fallback
+
+                if data_valid_for_interp:
+                    try:
+                        hist_times = res_var_payload['time']
+                        hist_values = res_var_payload[var]
+                        log.debug(f"[{testid}] Interpolating for '{var}' using {len(hist_times)} points.")
+                        f_interp = interpolate.interp1d(hist_times, hist_values,
+                                                        kind='linear',
+                                                        bounds_error=False,
+                                                        fill_value="extrapolate")
+                        res_var_reindexed = f_interp(regr_target_times)
+
+                        # Check for NaNs post-interpolation
+                        if np.isnan(res_var_reindexed).any():
+                            log.warning(f"[{testid}] NaNs found after interpolating '{var}'. Trying fallback fill.")
+                            if fallback_value is not None and np.isfinite(fallback_value):
+                                res_var_reindexed[np.isnan(res_var_reindexed)] = fallback_value
+                                if np.isnan(res_var_reindexed).any(): # Should not happen if fallback is finite
+                                     log.error(f"[{testid}] Failed to fill NaNs for '{var}' even with fallback {fallback_value}.")
+                                     raise RuntimeError(f"Unfillable NaNs after interpolation for {var}")
+                            else:
+                                log.error(f"[{testid}] Cannot fill NaNs for '{var}': Fallback value missing or non-finite.")
+                                raise RuntimeError(f"NaNs in interpolation and no valid fallback for {var}")
+
+                    except (ValueError, IndexError, Exception) as interp_e: # Catch broad interp errors
+                        log.error(f"[{testid}] Interpolation failed for '{var}': {interp_e}. Using fallback.", exc_info=True)
+                        res_var_reindexed = None # Signal fallback needed
+
+                # --- Apply Fallback if Needed ---
+                # Fallback triggered if: API failed (payload is None), 0 points, interp failed (reindexed is None)
+                if res_var_reindexed is None:
+                    log_reason = "API/payload error" if res_var_payload is None else "Interpolation error/0 points"
+                    log.warning(f"[{testid}] {log_reason} for regressive '{var}'. Using fallback (current value).")
+                    if fallback_value is not None:
+                        res_var_reindexed = np.full(self.regr_n, fill_value=fallback_value, dtype=np.float32)
+                    else:
+                        log.error(f"[{testid}] Cannot apply fallback for '{var}': Current value missing in 'res'.")
+                        raise RuntimeError(f"Missing regressive data and current value fallback for {var}")
+
+                # --- Append Regressive Values ---
                 observations.extend(list(res_var_reindexed))
 
-        # Get predictions if this is a predictive agent. 
+        # --- 4. Predictive Forecasts ---
         if self.is_predictive:
-            predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
-                                       json={'point_names': self.predictive_vars,
-                                             'horizon':     int(self.predictive_period),
-                                             'interval':    int(self.step_period)}).json()['payload']
+            predictions_payload = None
+            try:
+                api_url = f'{self.url}/forecast/{testid}'
+                api_payload = {'point_names': self.predictive_vars,
+                               'horizon': int(self.predictive_period),
+                               'interval': int(self.step_period)}
+                log.debug(f"[{testid}] Fetching forecast data: URL={api_url}, Payload={api_payload}")
+
+                requester = getattr(self, 'session', requests)
+                response = requester.put(
+                    api_url,
+                    json=api_payload,
+                    timeout=20
+                )
+                response.raise_for_status()
+                data = response.json()
+                predictions_payload = data.get('payload')
+                log.debug(f"[{testid}] Received forecast payload: Type={type(predictions_payload)}")
+
+            except requests.exceptions.RequestException as e:
+                log.error(f"[{testid}] API error fetching forecast data: {e}")
+                raise RuntimeError(f"Failed to get forecast data: {e}") from e
+            except Exception as e:
+                log.error(f"[{testid}] Error fetching/parsing forecast data: {e}", exc_info=True)
+                raise RuntimeError(f"Error processing forecast data: {e}") from e
+
+            # Validate and extract predictive data
+            if predictions_payload is None or not isinstance(predictions_payload, dict):
+                 log.error(f"[{testid}] Invalid or missing 'payload' in forecast response.")
+                 raise RuntimeError("Received invalid forecast payload from API.")
+
             for var in self.predictive_vars:
-                for i in range(self.pred_n):
-                    observations.append(predictions[var][i])
-            
-        # Reformat observations
-        observations_arr = np.array(observations).astype(np.float32)
-        self.last_raw_observation = observations_arr
-                
+                if var not in predictions_payload:
+                    log.error(f"[{testid}] Predictive var '{var}' missing in forecast payload: {list(predictions_payload.keys())}")
+                    raise RuntimeError(f"Forecast data missing for requested variable: {var}")
+
+                forecast_values = predictions_payload[var]
+                expected_len = self.pred_n # self.pred_n = int(self.predictive_period/self.step_period)+1
+
+                if not isinstance(forecast_values, list) or len(forecast_values) != expected_len:
+                    log.error(f"[{testid}] Forecast for '{var}' wrong type/length. "
+                              f"Expected list[{expected_len}], got {type(forecast_values)} "
+                              f"len={len(forecast_values) if isinstance(forecast_values, list) else 'N/A'}")
+                    raise RuntimeError(f"Invalid forecast data structure/length for: {var}")
+
+                # Append the forecast steps
+                observations.extend(forecast_values)
+
+
+        # --- 5. Final Formatting & Validation ---
+        try:
+            # Convert collected observations to a numpy array
+            observations_arr = np.array(observations, dtype=np.float32)
+        except ValueError as e:
+             # This might happen if fallback values or API responses were non-numeric strings, etc.
+             log.error(f"[{testid}] Failed to convert final observations list to float32 array: {e}", exc_info=True)
+             log.error(f"[{testid}] Content that failed conversion: {observations}")
+             raise RuntimeError(f"Could not create final observation array: {e}")
+
+        # Store the raw array before any potential wrapping/normalization
+        self.last_raw_observation = observations_arr.copy() # Use copy() for safety
+
+        # Final check for NaN/Inf
+        if not np.all(np.isfinite(observations_arr)):
+            nan_inf_indices = np.where(~np.isfinite(observations_arr))[0]
+            log.error(f"[{testid}] Non-finite values (NaN/Inf) detected in final observation array at indices {nan_inf_indices}!")
+            log.error(f"[{testid}] Array content: {observations_arr}")
+            # Depending on the RL lib, NaNs/Infs can crash training. Raising is safest.
+            raise ValueError(f"Non-finite values detected in final observation vector for {testid}")
+
+        log.debug(f"[{testid}] Final observations generated. Shape: {observations_arr.shape}")
         return observations_arr
     
     def get_kpis(self):
