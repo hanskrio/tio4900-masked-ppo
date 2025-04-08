@@ -31,7 +31,7 @@ def run_experiment(cfg, device):
     logger.info(f"Starting experiment with device: {device}")
 
     # Create your environment
-    env = make_boptest_env(cfg.environments)
+    env = make_boptest_env(cfg.environments, hydra_output_dir)
     logger.info(f"Environment created. Type: {type(env)}")
 
     # Create model based on config
