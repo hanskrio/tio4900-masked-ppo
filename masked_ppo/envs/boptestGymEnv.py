@@ -18,6 +18,15 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 from masked_ppo.envs.examples.test_and_plot import plot_results, test_agent
 
+# Define constants for masking rules 
+# Threshold for zone temperature in Kelvin (e.g., 23 degrees Celsius)
+ZONE_TEMP_THRESHOLD_FOR_MASKING_K = 273.15 + 23.0
+# Name of the observation variable representing zone temperature in the base env
+ZONE_TEMP_OBS_NAME = 'reaTZon_y'
+# Name of the continuous action dimension to potentially mask (heating control)
+# Make sure this matches an action name in your BoptestGymEnv actions list
+HEATING_ACTION_NAME = 'oveHeaPumY_u' # Or 'oveTSetSup_u' or whichever you use
+
 class BoptestGymEnv(gym.Env):
     '''
     BOPTEST Environment that follows gym interface.
@@ -145,6 +154,8 @@ class BoptestGymEnv(gym.Env):
         self.scenario           = scenario
         self.render_episodes    = render_episodes
         self.log_dir            = log_dir
+        self.last_raw_observation = None
+        self._obs_name_to_index = {}
         
         # Avoid requesting data before the beginning of the year
         if self.regressive_period is not None:
@@ -289,7 +300,10 @@ class BoptestGymEnv(gym.Env):
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
                                             high = np.array(self.upper_obs_bounds), 
-                                            dtype= np.float32)    
+                                            dtype= np.float32)
+        
+        #--- Populate the name-to-index mapping using the final list ---
+        self._obs_name_to_index = {name: i for i, name in enumerate(self.observations)}    
         
         #=============================================================
         # Define action space
@@ -450,7 +464,7 @@ class BoptestGymEnv(gym.Env):
             It should be analogous to the info returned by the `step` method. 
          
         '''        
-        
+
         def find_start_time():
             '''Recursive method to find a random start time out of 
             `excluding_periods`. An episode and an excluding_period that
@@ -765,9 +779,10 @@ class BoptestGymEnv(gym.Env):
                     observations.append(predictions[var][i])
             
         # Reformat observations
-        observations = np.array(observations).astype(np.float32)
+        observations_arr = np.array(observations).astype(np.float32)
+        self.last_raw_observation = observations_arr
                 
-        return observations
+        return observations_arr
     
     def get_kpis(self):
         '''Auxiliary method to get the so-colled core KPIs as computed in 
@@ -988,141 +1003,216 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         return observation_wrapper
     
 class DiscretizedActionWrapper(gym.ActionWrapper):
-    '''This wrapper converts the Box action space into a Discrete action 
-    space. 
-    
+    '''
+    This wrapper converts the Box action space into a Discrete action
+    space AND implements action masking logic compatible with MaskablePPO.
+
     Notes
     -----
-    The concept of wrappers is very powerful, with which we are capable 
-    to customize observation, action, step function, etc. of an env. 
-    No matter how many wrappers are applied, `env.unwrapped` always gives 
-    back the internal original environment object. Typical use:
-    `env = BoptestGymEnv()`
-    `env = DiscretizedActionWrapper(env, n_bins_act=10)`
-    
+    Assumes the wrapped environment (`env`) is an instance of BoptestGymEnv
+    or has similar attributes:
+    - `env.unwrapped.last_raw_observation`: Stores the latest observation numpy array.
+    - `env.unwrapped._obs_name_to_index`: A dict mapping observation names to indices.
+    - `env.unwrapped.actions`: A list of continuous action names.
+    - `env.action_space`: The original Box action space.
     '''
-    def __init__(self, env, n_bins_act=10):
+    def __init__(self, env, n_bins_act=10, masking_enabled=True):
         '''Constructor
-        
+
         Parameters
         ----------
         env: gym.Env
-            Original gym environment
-        n_bins_obs: integer
-            Number of bins to be used in the transformed action space
-            for each action. 
-        
+            Original gym environment (e.g., BoptestGymEnv instance).
+        n_bins_act: integer
+            Number of discrete choices (values) for each original continuous action.
+            The action space size will be (n_bins_act+1)^n_act based on original linspace use.
+            Adjust n_bins_act parameter name/meaning if needed. The code assumes
+            n_bins_act means number of intervals, leading to n_bins_act+1 points/choices.
+        masking_enabled: bool
+            If True, enables the action masking logic.
         '''
-        
-        # Construct from parent class
         super().__init__(env)
-        
-        # Assign attributes (env already assigned)
+
+        # Assign attributes
+        # Correcting interpretation: n_bins_act = number of intervals/bins
+        # n_bins_act + 1 = number of discrete points/choices per action dimension
         self.n_bins_act = n_bins_act
+        self.num_choices_per_dim = n_bins_act + 1 # Number of discrete values per action
+        self.masking_enabled = masking_enabled
 
         # Assert that original action space is a Box space
-        assert isinstance(env.action_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
-        
-        # Get observation space bounds
-        low     = self.action_space.low
-        high    = self.action_space.high
-        
-        # Calculate dimension of action space
-        self.n_act = low.flatten().shape[0]
-        
-        # Obtain values of discretized action space
-        self.val_bins_act   = [np.linspace(l, h, n_bins_act + 1) for l, h in
-                               zip(low.flatten(), high.flatten())]
-        
-        # Instantiate discretized action space
-        self.action_space = spaces.Discrete((n_bins_act+1) ** self.n_act)
-        
+        assert isinstance(env.action_space, spaces.Box), \
+            'This wrapper only works with continuous action space (spaces.Box)'
+
+        # Get original action space bounds
+        low = self.env.action_space.low # Use self.env here
+        high = self.env.action_space.high
+        self.n_act = low.flatten().shape[0] # Number of continuous action dimensions
+
+        # Obtain values corresponding to discrete choices for each action dimension
+        # Creates n_bins_act + 1 points for each dimension
+        self.val_bins_act = [np.linspace(l, h, self.num_choices_per_dim) for l, h in
+                             zip(low.flatten(), high.flatten())]
+
+        # Instantiate the Discrete action space for the wrapper
+        # Total actions = (num_choices_per_dim) ^ num_dimensions
+        self.action_space = spaces.Discrete(self.num_choices_per_dim ** self.n_act)
+        print(f"DiscretizedActionWrapper: Created discrete action space with {self.action_space.n} actions.")
+
+
+        # --- Setup for Masking ---
+        self.zone_temp_obs_index = -1
+        self.heating_action_cont_index = -1
+        self._masking_possible = False # Internal flag
+
+        if self.masking_enabled:
+            # Find the index of the zone temperature observation in the base env's observation array
+            if hasattr(self.env.unwrapped, '_obs_name_to_index') and isinstance(self.env.unwrapped._obs_name_to_index, dict) and ZONE_TEMP_OBS_NAME in self.env.unwrapped._obs_name_to_index:
+                 self.zone_temp_obs_index = self.env.unwrapped._obs_name_to_index[ZONE_TEMP_OBS_NAME]
+            else:
+                 print(f"Warning [DiscretizedActionWrapper]: Observation '{ZONE_TEMP_OBS_NAME}' not found in base env's _obs_name_to_index or attribute missing/invalid. Masking based on it will be disabled.")
+                 self.masking_enabled = False
+
+            # Find the index of the heating action in the base env's continuous action list
+            # Use self.env.unwrapped.actions which should hold the list of action names
+            if self.masking_enabled and hasattr(self.env.unwrapped, 'actions') and isinstance(self.env.unwrapped.actions, list) and HEATING_ACTION_NAME in self.env.unwrapped.actions:
+                 self.heating_action_cont_index = self.env.unwrapped.actions.index(HEATING_ACTION_NAME)
+                 # Identify the discrete index corresponding to 'high heating'
+                 # This is the last index (0 to n_bins_act) which is n_bins_act
+                 self.high_heating_action_index = self.n_bins_act # Index representing max value
+                 print(f"Info [DiscretizedActionWrapper]: Masking enabled. Zone Temp Index: {self.zone_temp_obs_index}, Heating Action Index: {self.heating_action_cont_index}, High Heat Bin Index: {self.high_heating_action_index}")
+                 self._masking_possible = True # Indicate setup was successful
+            elif self.masking_enabled: # Only print warning if masking was intended
+                 print(f"Warning [DiscretizedActionWrapper]: Continuous action '{HEATING_ACTION_NAME}' not found in base env's actions list or attribute missing/invalid. Masking based on it will be disabled.")
+                 self.masking_enabled = False # Disable if action not found
+        else:
+            print("Info [DiscretizedActionWrapper]: Masking is disabled by configuration.")
+
+
     def _get_indices(self, action_wrapper):
         """
-        Returns the indices of the discretized action space corresponding to the given action wrapper.
-        
-        Parameters
-        ----------
-        action_wrapper : int
-            The action wrapper value to be converted to indices.
-        
-        Returns
-        -------
-        list
-            A list of indices representing the discretized action space.
-
-        Example
-        -------
-        Suppose:
-        self.n_act = 3 (number of actions)
-        self.n_bins_act = 3 (number of bins per action, this means 4 values possible per action)
-        self.val_bins_act = [[0, 1, 2, 3], [10, 11, 12, 13], [20, 21, 22, 23]] (value bins for each action)
-        
-        Then, `_get_indices` example, for action_wrapper = 37:
-        indices = []
-        Loop 3 times:
-        Iteration 1: indices.append((37 % (3+1)) -> indices = [1], action_wrapper //= 4 -> action_wrapper = 9
-        Iteration 2: indices.append((9 % (3+1)) -> indices = [1, 1], action_wrapper //= 4 -> action_wrapper = 2
-        Iteration 3: indices.append((2 % (3+1)) -> indices = [1, 1, 2], action_wrapper //= 4 -> action_wrapper = 0
-        Reverse indices: [2, 1, 1]
-
-        Note
-        ----
-        To understand why we need to add 1 in `action_wrapper%(self.n_bins_act+1)` think of the edge case
-        where we only have one bin. If the action_wrapper is 1, then the index should be 1, but if we do not
-        add 1 to `self.n_bins_act`, the index would be 0 (because 1%1=0). The underlying reason is that 
-        n_bins_act is the number of bins, not the number of possible action values.
+        Returns the indices (0 to n_bins_act) for each action dimension,
+        corresponding to the overall discrete action index (`action_wrapper`).
         """
-        indices=[]
+        if not (0 <= action_wrapper < self.action_space.n):
+             raise ValueError(f"Action ({action_wrapper}) out of bounds [0, {self.action_space.n-1}]")
+
+        indices = []
+        current_action_wrapper = action_wrapper
+        # Use num_choices_per_dim for modulo and division base
+        base = self.num_choices_per_dim
         for _ in range(self.n_act):
-            indices.append(action_wrapper%(self.n_bins_act+1))
-            action_wrapper //= self.n_bins_act
-        return indices[::-1]    
+            indices.append(current_action_wrapper % base)
+            current_action_wrapper //= base
+        return indices[::-1] # Reverse to match the order of self.val_bins_act
 
     def action(self, action_wrapper):
-        '''This method accepts a single parameter (the modified action
-        in the wrapper format) and returns the action to be passed to the 
-        original environment. 
-        
-        Parameters
-        ----------
-        action_wrapper: 
-            Action in the modified environment action space format 
-            to be reformulated back to the original environment format.
-        
-        Returns
-        -------
-            Action in the original environment format.  
-        
-        Notes
-        -----
-        To better understand what this method needs to do, see what the 
-        `gym.ActionWrapper` parent class is doing in `gym.core`:
-        
-        Implement something here that performs the following mapping:
-        DiscretizedObservationWrapper.action_space --> DiscretizedActionWrapper.action_space
-
-        Example
-        -------
-        For action_wrapper = 37 (follows the example of `_get_indices` above):
-
-        indices = [2, 1, 1]
-        Map indices to action values:
-        bins[2] from [0, 1, 2, 3] -> 2
-        bins[1] from [10, 11, 12, 13] -> 11
-        bins[1] from [20, 21, 22, 23] -> 21
-        Convert to NumPy array: np.asarray([2, 11, 21])
-        Return action: [2, 11, 21]
+        '''
+        Converts the discrete action index (`action_wrapper`) provided by the agent
+        into the continuous action vector required by the underlying environment.
         '''
         indices = self._get_indices(action_wrapper)
-        # Get the action values from bin indexes
-        action = [bins[x]
-                  for x, bins in zip(indices, 
-                                     self.val_bins_act)]
+        # Get the action values corresponding to the calculated indices
+        action_cont = [self.val_bins_act[i][index]
+                       for i, index in enumerate(indices)]
 
-        action = np.asarray(action).astype(self.env.action_space.dtype)
-        
-        return action
+        # Clip to ensure bounds are strictly respected (due to potential float precision issues)
+        action_cont_clipped = np.clip(action_cont, self.env.action_space.low, self.env.action_space.high)
+
+        return np.asarray(action_cont_clipped).astype(self.env.action_space.dtype)
+
+    # --- MASKING METHOD ---
+    def action_masks(self) -> np.ndarray:
+        """
+        Calculates the action mask based on the current state of the underlying env.
+        Returns a numpy array of 1s (valid) and 0s (invalid) for the discrete action space.
+        """
+        # Start with all actions being valid
+        mask = np.ones(self.action_space.n, dtype=np.int8)
+
+        # Return immediately if masking is not enabled or not possible
+        if not self.masking_enabled or not self._masking_possible:
+            return mask
+
+        # Get the last observation from the base environment
+        # Accessing unwrapped ensures we get the BoptestGymEnv instance
+        last_obs = self.env.unwrapped.last_raw_observation
+        if last_obs is None:
+            # This might happen if called before the first reset/step in certain scenarios
+            # print("Warning: action_masks called before observation is available. Returning all valid.")
+            return mask
+
+        try:
+            # Get the specific observation value needed for the rule
+            zone_temp = last_obs[self.zone_temp_obs_index]
+
+            # Apply the masking rule: Disallow high heating if zone temp is high
+            if zone_temp > ZONE_TEMP_THRESHOLD_FOR_MASKING_K:
+                # Find all discrete actions that correspond to high heating
+                for discrete_action_idx in range(self.action_space.n):
+                    # Find the bin index used for the heating action dimension
+                    bin_indices = self._get_indices(discrete_action_idx)
+                    heating_bin_index = bin_indices[self.heating_action_cont_index]
+
+                    # Check if this action uses the "high heating" index
+                    if heating_bin_index == self.high_heating_action_index:
+                         mask[discrete_action_idx] = 0 # Mask this action
+                         # Optional debug print:
+                         # print(f"Debug Masking: Temp {zone_temp:.1f} > {ZONE_TEMP_THRESHOLD_FOR_MASKING_K:.1f}. Masking action {discrete_action_idx} (Heating idx: {heating_bin_index})")
+
+
+        except IndexError:
+             print(f"Warning: IndexError accessing observation at index {self.zone_temp_obs_index} for masking. Mask calculation skipped for this step.")
+             # Return all valid as a fallback for this step
+             return np.ones(self.action_space.n, dtype=np.int8)
+        except Exception as e:
+            print(f"Warning: Error during mask calculation: {e}. Mask calculation skipped for this step.")
+            # Return all valid as a fallback for this step
+            return np.ones(self.action_space.n, dtype=np.int8)
+
+        # Optional: Ensure there's always at least one valid action
+        # if np.sum(mask) == 0:
+        #     print("Warning: All actions were masked! Allowing action 0 as a fallback.")
+        #     mask[0] = 1
+
+        return mask
+
+    # --- OVERRIDE step ---
+    def step(self, action_wrapper):
+        """ Steps the environment using the discrete action, calculates and adds the action mask to the info dict. """
+        # Convert discrete action index (from agent) to continuous action for the base env
+        continuous_action = self.action(action_wrapper)
+
+        # Step the base environment
+        # The base env's step calls get_observations, updating unwrapped.last_raw_observation
+        observation, reward, terminated, truncated, info = self.env.step(continuous_action)
+
+        # Calculate the mask for the *new* state based on the updated observation
+        current_mask = self.action_masks()
+
+        # Add the mask to the info dictionary (or create info if it's None)
+        if info is None:
+             info = {}
+        info["action_mask"] = current_mask
+
+        return observation, reward, terminated, truncated, info
+
+    # --- OVERRIDE reset ---
+    def reset(self, *, seed=None, options=None):
+        """ Resets the environment and adds the initial action mask to the info dict. """
+        # Reset the base environment
+        # The base env's reset calls get_observations, updating unwrapped.last_raw_observation
+        observation, info = self.env.reset(seed=seed, options=options)
+
+        # Calculate the initial mask based on the initial observation
+        initial_mask = self.action_masks()
+
+        # Add the mask to the info dictionary (or create info if it's None)
+        if info is None:
+             info = {}
+        info["action_mask"] = initial_mask
+
+        return observation, info
       
 class NormalizedObservationWrapper(gym.ObservationWrapper):
     '''This wrapper normalizes the values of the observation space to lie
