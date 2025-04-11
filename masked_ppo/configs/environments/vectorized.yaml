@@ -15,6 +15,7 @@ observations:
   PriceElectricPowerHighlyDynamic: [-0.4, 0.4]
   LowerSetp[1]: [280.0, 310.0]
   UpperSetp[1]: [280.0, 310.0]
+  reaTSetHea_y: [280.0, 310.0]
 predictive_period: 86400
 regressive_period: 21600
 max_episode_length: 1209600
