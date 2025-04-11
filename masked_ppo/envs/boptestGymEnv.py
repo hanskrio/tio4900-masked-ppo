@@ -1330,10 +1330,25 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
 
             # Find action index
             if self.masking_enabled:
-                try:
-                    self.heating_action_cont_index = self.env.unwrapped.actions.index(self.heating_action_name)
-                except (ValueError, AttributeError):
-                    warnings.warn(f"[DiscretizedActionWrapper] Action '{self.heating_action_name}' not found in base env actions. Masking disabled.", RuntimeWarning)
+                # --- MODIFIED CHECK ---
+                # Try to get the innermost unwrapped environment
+                base_env = self.env
+                while hasattr(base_env, 'env'):
+                    base_env = base_env.env
+                # Now base_env should be the BoptestGymEnv instance (hopefully!)
+
+                if hasattr(base_env, 'actions') and isinstance(base_env.actions, list):
+                    try:
+                        # Try finding the action index on the likely base environment
+                        self.heating_action_cont_index = base_env.actions.index(self.heating_action_name)
+                    except ValueError: # Action name not found in the list
+                         warnings.warn(f"[DiscretizedActionWrapper] Action '{self.heating_action_name}' not found in base env actions list: {base_env.actions}. Masking disabled.", RuntimeWarning)
+                         self.masking_enabled = False
+                    # except AttributeError: # Should be caught by hasattr above
+                    #      pass # Already handled by the outer if/else
+                else:
+                    # If 'actions' attribute doesn't exist or isn't a list on the base env
+                    warnings.warn(f"[DiscretizedActionWrapper] Base env (type {type(base_env)}) missing or invalid 'actions' list. Masking disabled.", RuntimeWarning)
                     self.masking_enabled = False
 
             # --- Pre-calculate Heating Action Indices ---
