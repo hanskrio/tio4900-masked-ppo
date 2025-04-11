@@ -20,13 +20,24 @@ from stable_baselines3.common.callbacks import BaseCallback
 from masked_ppo.envs.examples.test_and_plot import plot_results, test_agent
 
 # Define constants for masking rules 
-# Threshold for zone temperature in Kelvin (e.g., 23 degrees Celsius)
-ZONE_TEMP_THRESHOLD_FOR_MASKING_K = 273.15 + 23.0
-# Name of the observation variable representing zone temperature in the base env
 ZONE_TEMP_OBS_NAME = 'reaTZon_y'
-# Name of the continuous action dimension to potentially mask (heating control)
-# Make sure this matches an action name in your BoptestGymEnv actions list
-HEATING_ACTION_NAME = 'oveHeaPumY_u' # Or 'oveTSetSup_u' or whichever you use
+# --- Use Heating Setpoint Measurement as Occupancy Proxy ---
+OCCUPANCY_PROXY_OBS_NAME = 'reaTSetHea_y'
+# --- Define the expected setpoint values (in Kelvin if obs are K) ---
+OCCUPIED_HEATING_SETPOINT_K = 273.15 + 21.0  # ~294.15 K
+UNOCCUPIED_HEATING_SETPOINT_K = 273.15 + 15.0 # ~288.15 K
+# Tolerance for float comparison
+SETPOINT_COMPARISON_TOLERANCE = 0.1 # Kelvin
+# -------------------------------------------------------
+HEATING_ACTION_NAME = 'oveHeaPumY_u'
+# ... rest of the constants (safety margin, etc.) ...
+# NOTE: Keep the OCCUPIED/UNOCCUPIED _UPPER/LOWER_ SP constants for the actual masking rule
+OCCUPIED_UPPER_SP_K = celsius_to_kelvin(OCCUPIED_UPPER_SP_C) # 24C -> 297.15K
+OCCUPIED_LOWER_SP_K = celsius_to_kelvin(OCCUPIED_LOWER_SP_C) # 21C -> 294.15K
+UNOCCUPIED_UPPER_SP_K = celsius_to_kelvin(UNOCCUPIED_UPPER_SP_C) # 30C -> 303.15K
+UNOCCUPIED_LOWER_SP_K = celsius_to_kelvin(UNOCCUPIED_LOWER_SP_C) # 15C -> 288.15K
+SAFETY_MARGIN_K = SAFETY_MARGIN_C
+ASSUME_OBS_IN_KELVIN = True
 
 class BoptestGymEnv(gym.Env):
     '''
