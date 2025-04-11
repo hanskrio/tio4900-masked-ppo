@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import random
 import gymnasium as gym
 import requests
+import warnings
 import logging
 import numpy as np
 import pandas as pd
@@ -19,25 +20,55 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 from masked_ppo.envs.examples.test_and_plot import plot_results, test_agent
 
-# Define constants for masking rules 
-ZONE_TEMP_OBS_NAME = 'reaTZon_y'
+
+#==============================================================================
+# --- VERIFY these names match your specific BOPTEST test case observations/actions ---
+ZONE_TEMP_OBS_NAME = 'reaTZon_y'        # Zone temperature observation name
+
 # --- Use Heating Setpoint Measurement as Occupancy Proxy ---
-OCCUPANCY_PROXY_OBS_NAME = 'reaTSetHea_y'
-# --- Define the expected setpoint values (in Kelvin if obs are K) ---
-OCCUPIED_HEATING_SETPOINT_K = 273.15 + 21.0  # ~294.15 K
-UNOCCUPIED_HEATING_SETPOINT_K = 273.15 + 15.0 # ~288.15 K
-# Tolerance for float comparison
-SETPOINT_COMPARISON_TOLERANCE = 0.1 # Kelvin
-# -------------------------------------------------------
-HEATING_ACTION_NAME = 'oveHeaPumY_u'
-# ... rest of the constants (safety margin, etc.) ...
-# NOTE: Keep the OCCUPIED/UNOCCUPIED _UPPER/LOWER_ SP constants for the actual masking rule
-OCCUPIED_UPPER_SP_K = celsius_to_kelvin(OCCUPIED_UPPER_SP_C) # 24C -> 297.15K
-OCCUPIED_LOWER_SP_K = celsius_to_kelvin(OCCUPIED_LOWER_SP_C) # 21C -> 294.15K
-UNOCCUPIED_UPPER_SP_K = celsius_to_kelvin(UNOCCUPIED_UPPER_SP_C) # 30C -> 303.15K
-UNOCCUPIED_LOWER_SP_K = celsius_to_kelvin(UNOCCUPIED_LOWER_SP_C) # 15C -> 288.15K
-SAFETY_MARGIN_K = SAFETY_MARGIN_C
-ASSUME_OBS_IN_KELVIN = True
+OCCUPANCY_PROXY_OBS_NAME = 'reaTSetHea_y' # Verified measurement name
+
+# --- Define expected setpoint values (in Kelvin if obs are K) ---
+# These should match the baseline controller's logic as observed or documented
+OCCUPIED_HEATING_SETPOINT_K = 273.15 + 21.0  # Assumed occupied heating SP (21 C)
+UNOCCUPIED_HEATING_SETPOINT_K = 273.15 + 15.0 # Assumed unoccupied heating SP (15 C)
+# Tolerance for float comparison when checking the proxy
+SETPOINT_COMPARISON_TOLERANCE = 0.1 # Kelvin tolerance
+
+# --- Define the heating action name ---
+HEATING_ACTION_NAME = 'oveHeaPumY_u'    # Verified heating action name
+
+# --- Define Setpoints and Margin for the MASKING RULE ITSELF (in Celsius) ---
+OCCUPIED_UPPER_SP_C = 24.0
+OCCUPIED_LOWER_SP_C = 21.0
+UNOCCUPIED_UPPER_SP_C = 30.0 # Example: Allow wider range when unoccupied
+UNOCCUPIED_LOWER_SP_C = 15.0 # Example: Allow wider range when unoccupied
+SAFETY_MARGIN_C = 1.0      # +/- 1 degree Celsius buffer
+
+# --- Unit Conversion and Assumption ---
+ASSUME_OBS_IN_KELVIN = True # Set to False if your specific obs are Celsius
+
+def celsius_to_kelvin(temp_c):
+    return temp_c + 273.15
+
+if ASSUME_OBS_IN_KELVIN:
+    # Convert masking rule setpoints to Kelvin
+    OCCUPIED_UPPER_SP_K = celsius_to_kelvin(OCCUPIED_UPPER_SP_C)
+    OCCUPIED_LOWER_SP_K = celsius_to_kelvin(OCCUPIED_LOWER_SP_C)
+    UNOCCUPIED_UPPER_SP_K = celsius_to_kelvin(UNOCCUPIED_UPPER_SP_C)
+    UNOCCUPIED_LOWER_SP_K = celsius_to_kelvin(UNOCCUPIED_LOWER_SP_C)
+    SAFETY_MARGIN_K = SAFETY_MARGIN_C # Margin is same magnitude in K or C
+    # Keep proxy check setpoints in K as defined above
+else:
+    # Use Celsius directly for masking rule setpoints
+    OCCUPIED_UPPER_SP_K = OCCUPIED_UPPER_SP_C
+    OCCUPIED_LOWER_SP_K = OCCUPIED_LOWER_SP_C
+    UNOCCUPIED_UPPER_SP_K = UNOCCUPIED_UPPER_SP_C
+    UNOCCUPIED_LOWER_SP_K = UNOCCUPIED_LOWER_SP_C
+    SAFETY_MARGIN_K = SAFETY_MARGIN_C
+    # Need to ensure proxy check values are also in Celsius if obs aren't Kelvin
+    if OCCUPIED_HEATING_SETPOINT_K > 100: # Basic check if K values were used
+         warnings.warn("ASSUME_OBS_IN_KELVIN is False, but proxy setpoints seem to be in Kelvin. Adjust constants.", RuntimeWarning)
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -1084,7 +1115,7 @@ class BoptestGymEnv(gym.Env):
     
         np.savez(file_path.split('.')[-2], **numpy_dict)
         
-        return numpy_dict
+        return numpy_dict 
 
 class DiscretizedObservationWrapper(gym.ObservationWrapper):
     '''This wrapper converts the Box observation space into a Discrete 
