@@ -31,7 +31,7 @@ def run_experiment(cfg, device):
     logger.info(f"Starting experiment with device: {device}")
 
     # Create your environment
-    env = make_boptest_env(cfg.environments)
+    env = make_boptest_env(cfg.environments, hydra_output_dir)
     logger.info(f"Environment created. Type: {type(env)}")
 
     # Create model based on config
@@ -43,14 +43,14 @@ def run_experiment(cfg, device):
     logger.info("Model created and SB3 logger configured")
 
     # --- Instantiate the callback ---
-    episode_callback = EpisodeLoggerCallback(verbose=0) # Set verbose=1 for debug prints
+    #episode_callback = EpisodeLoggerCallback(verbose=0) # Set verbose=1 for debug prints
     # --------------------------------
 
     # Train (pass callback to learn method)
     logger.info(f"Starting training for {cfg.training.total_timesteps} timesteps")
     model.learn(
         total_timesteps=cfg.training.total_timesteps,
-        callback=episode_callback 
+        #callback=episode_callback 
     )
     logger.info("Training completed")
 
