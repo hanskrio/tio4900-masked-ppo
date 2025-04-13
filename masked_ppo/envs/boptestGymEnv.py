@@ -1300,102 +1300,61 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         print(f"Info [Masking]: Using '{self.occupancy_proxy_obs_name}' as occupancy proxy.")
         print(f"Info [Masking]: Expecting Occupied Heat SP ~{self.occupied_heat_sp_val:.1f} K, Unoccupied ~{self.unoccupied_heat_sp_val:.1f} K")
 
+        print(f"DEBUG [Masking Init]: Starting masking setup checks...")
+
         if self.masking_enabled:
-            # Validate base environment attributes
-            if not hasattr(self.env.unwrapped, '_obs_name_to_index') or not isinstance(self.env.unwrapped._obs_name_to_index, dict):
-                warnings.warn("[DiscretizedActionWrapper] Base env missing or invalid '_obs_name_to_index'. Masking disabled.", RuntimeWarning)
-                self.masking_enabled = False
-            elif not hasattr(self.env.unwrapped, 'actions') or not isinstance(self.env.unwrapped.actions, list):
-                warnings.warn("[DiscretizedActionWrapper] Base env missing or invalid 'actions' list. Masking disabled.", RuntimeWarning)
-                self.masking_enabled = False
-            elif not hasattr(self.env.unwrapped, 'last_raw_observation'):
-                 warnings.warn("[DiscretizedActionWrapper] Base env missing 'last_raw_observation'. Masking might fail initially.", RuntimeWarning)
+            print(f"DEBUG [Masking Init]: Starting simplified setup checks...")
+            base_env = None
+            try:
+                # print(f"DEBUG [Masking Init]: Accessing self.env.unwrapped (self.env is {type(self.env)})...")
+                base_env = self.env.unwrapped
+                # print(f"DEBUG [Masking Init]: Got base_env of type {type(base_env)}")
 
-            # Find observation indices
-            if self.masking_enabled:
-                obs_map = self.env.unwrapped._obs_name_to_index
-                if self.zone_temp_obs_name in obs_map:
-                    self.zone_temp_obs_index = obs_map[self.zone_temp_obs_name]
-                else:
-                    warnings.warn(f"[DiscretizedActionWrapper] Observation '{self.zone_temp_obs_name}' not found. Masking disabled.", RuntimeWarning)
-                    self.masking_enabled = False
-
-            if self.masking_enabled:
-                 # Find the index for the PROXY observation
-                 if self.occupancy_proxy_obs_name in obs_map:
-                     self.occupancy_proxy_obs_index = obs_map[self.occupancy_proxy_obs_name]
-                 else:
-                     warnings.warn(f"[DiscretizedActionWrapper] Occupancy Proxy Observation '{self.occupancy_proxy_obs_name}' not found. Masking disabled.", RuntimeWarning)
-                     self.masking_enabled = False
-
-            # Find action index
-            if self.masking_enabled:
-                # --- MODIFIED CHECK ---
-                # Try to get the innermost unwrapped environment
-                base_env = self.env
-                while hasattr(base_env, 'env'):
-                    base_env = base_env.env
-                # Now base_env should be the BoptestGymEnv instance (hopefully!)
-
-                if hasattr(base_env, 'actions') and isinstance(base_env.actions, list):
-                    try:
-                        # Try finding the action index on the likely base environment
-                        self.heating_action_cont_index = base_env.actions.index(self.heating_action_name)
-                    except ValueError: # Action name not found in the list
-                         warnings.warn(f"[DiscretizedActionWrapper] Action '{self.heating_action_name}' not found in base env actions list: {base_env.actions}. Masking disabled.", RuntimeWarning)
-                         self.masking_enabled = False
-                    # except AttributeError: # Should be caught by hasattr above
-                    #      pass # Already handled by the outer if/else
-                else:
-                    # If 'actions' attribute doesn't exist or isn't a list on the base env
-                    warnings.warn(f"[DiscretizedActionWrapper] Base env (type {type(base_env)}) missing or invalid 'actions' list. Masking disabled.", RuntimeWarning)
-                    self.masking_enabled = False
-
-            # --- Pre-calculate Heating Action Indices ---
-            if self.masking_enabled and self.heating_action_cont_index != -1:
-                try:
-                    # Assuming the first bin (index 0) corresponds to the lowest value (0 = 'off')
-                    self.heating_off_bin_index = 0
-                    self.heating_off_value = self.val_bins_act[self.heating_action_cont_index][self.heating_off_bin_index]
-                    if not np.isclose(self.heating_off_value, 0.0):
-                         warnings.warn(f"[DiscretizedActionWrapper] Heating action's lowest value (index {self.heating_off_bin_index}) is {self.heating_off_value:.2f}, not 0.0. 'Off' detection might be incorrect.", RuntimeWarning)
-
-                    print(f"Info [Masking]: Heating action '{self.heating_action_name}' at index {self.heating_action_cont_index}.")
-                    print(f"Info [Masking]: Assumed 'heating off' value: {self.heating_off_value:.2f} (Bin Index: {self.heating_off_bin_index})")
-
-                    self.heating_on_action_indices = []
-                    for discrete_action_idx in range(self.action_space.n):
-                        bin_indices = self._get_indices(discrete_action_idx)
-                        heating_bin_index = bin_indices[self.heating_action_cont_index]
-                        # If the heating bin index is not the 'off' index, it's a 'heating on' action
-                        if heating_bin_index != self.heating_off_bin_index:
-                            self.heating_on_action_indices.append(discrete_action_idx)
-
-                    if not self.heating_on_action_indices:
-                         warnings.warn(f"[DiscretizedActionWrapper] No 'heating on' actions identified based on index {self.heating_off_bin_index}. Masking will not function.", RuntimeWarning)
-                         self.masking_enabled = False # Disable if no heating actions found
+                # 1. Check for Observation Map (_obs_name_to_index)
+                # print(f"DEBUG [Masking Init]: Checking for _obs_name_to_index...")
+                if hasattr(base_env, '_obs_name_to_index') and isinstance(base_env._obs_name_to_index, dict):
+                    obs_map = base_env._obs_name_to_index
+                    # print(f"DEBUG [Masking Init]: Found _obs_name_to_index with {len(obs_map)} keys.")
+                    # Find zone temp index
+                    if self.zone_temp_obs_name in obs_map:
+                        self.zone_temp_obs_index = obs_map[self.zone_temp_obs_name]
+                        # print(f"DEBUG [Masking Init]: Found zone temp index: {self.zone_temp_obs_index}")
                     else:
-                        print(f"Info [Masking]: Identified {len(self.heating_on_action_indices)} discrete actions corresponding to 'heating on'.")
+                        warnings.warn(f"[DiscretizedActionWrapper] Observation '{self.zone_temp_obs_name}' not found. Masking disabled.", RuntimeWarning)
+                        self.masking_enabled = False
+                    # Find occupancy proxy index
+                    if self.masking_enabled and self.occupancy_proxy_obs_name in obs_map:
+                        self.occupancy_proxy_obs_index = obs_map[self.occupancy_proxy_obs_name]
+                        # print(f"DEBUG [Masking Init]: Found occupancy proxy index: {self.occupancy_proxy_obs_index}")
+                    elif self.masking_enabled:
+                         warnings.warn(f"[DiscretizedActionWrapper] Occupancy Proxy Obs '{self.occupancy_proxy_obs_name}' not found. Masking disabled.", RuntimeWarning)
+                         self.masking_enabled = False
+                else:
+                    warnings.warn(f"[DiscretizedActionWrapper] Base env missing or invalid '_obs_name_to_index'. Masking disabled.", RuntimeWarning)
+                    self.masking_enabled = False
 
-                except IndexError:
-                     warnings.warn(f"[DiscretizedActionWrapper] Error accessing action values for heating index {self.heating_action_cont_index}. Pre-calculation failed. Masking disabled.", RuntimeWarning)
-                     self.masking_enabled = False
+                # 2. Check for last_raw_observation attribute (only warn)
+                if self.masking_enabled and not hasattr(base_env, 'last_raw_observation'):
+                     warnings.warn("[DiscretizedActionWrapper] Base env missing 'last_raw_observation' attribute. Masking might fail on first step.", RuntimeWarning)
 
-            # Check if all necessary indices and lists were found/created before declaring masking possible
-            if self.masking_enabled and self.zone_temp_obs_index != -1 and \
-               self.occupancy_proxy_obs_index != -1 and self.heating_action_cont_index != -1 and \
-               hasattr(self, 'heating_on_action_indices') and self.heating_on_action_indices:
-                print(f"Info [Masking]: Setup successful. Zone Temp Idx: {self.zone_temp_obs_index}, "
-                      f"Occ Proxy Idx: {self.occupancy_proxy_obs_index}, Heat Act Idx: {self.heating_action_cont_index}.")
-                self._masking_possible = True # Setup successful
-            elif self.masking_enabled:
-                 # If masking was enabled but setup failed, print warning and disable
-                 warnings.warn("[DiscretizedActionWrapper] Masking enabled but setup failed (missing indices or heating actions). Masking inactive.", RuntimeWarning)
+                # 3. Check if obs indices were found
+                if self.masking_enabled and (self.zone_temp_obs_index == -1 or self.occupancy_proxy_obs_index == -1):
+                     warnings.warn("[DiscretizedActionWrapper] Masking setup failed in __init__ (missing obs indices). Masking disabled.", RuntimeWarning)
+                     self.masking_enabled = False # Ensure disabled
+
+            except AttributeError as e:
+                 warnings.warn(f"[DiscretizedActionWrapper] AttributeError accessing unwrapped environment in __init__. Masking disabled. Error: {e}", RuntimeWarning)
+                 self.masking_enabled = False
+            except Exception as e:
+                 warnings.warn(f"[DiscretizedActionWrapper] Unexpected error during masking __init__. Masking disabled. Error: {e}", RuntimeWarning)
                  self.masking_enabled = False
 
-
+        # Final status message
         if not self.masking_enabled:
-            print("Info [DiscretizedActionWrapper]: Masking is disabled or setup failed.")
+            print("Info [Masking Init]: Masking is disabled or initial setup failed.")
+        else:
+            # Indicate that the setup is deferred, success depends on action_masks
+            print("Info [Masking Init]: Masking is enabled, setup checks deferred to action_masks.")
 
 
     def _get_indices(self, action_wrapper):
@@ -1424,81 +1383,128 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
     def action_masks(self) -> np.ndarray:
         """
         Calculates the action mask based on the safety rule using setpoint proxy.
+        Finds heating action index and calculates heating actions on the fly if needed.
         Returns a boolean numpy array (True=valid, False=invalid).
         """
-        # Start with all actions being valid (True)
         mask = np.ones(self.action_space.n, dtype=bool)
 
-        # Return immediately if masking is not enabled/possible
-        if not self.masking_enabled or not self._masking_possible:
-            return mask.astype(bool) # Ensure boolean return
-
-        # Get the last observation from the base environment
-        last_obs = self.env.unwrapped.last_raw_observation
-        if last_obs is None:
-            # Return all valid if no observation available yet
-            # warnings.warn("action_masks called before observation is available. Returning all valid.", RuntimeWarning)
+        # --- Initial Check ---
+        if not self.masking_enabled:
             return mask.astype(bool)
 
+        # --- Defer Heating Index Lookup ---
+        # We only need to do this once per environment instance
+        if self.heating_action_cont_index == -1:
+            # print("DEBUG [action_masks]: First call or heating index not found yet. Trying to find...")
+            try:
+                # Access unwrapped env reliably HERE
+                base_env = self.env.unwrapped
+                if hasattr(base_env, 'actions') and isinstance(base_env.actions, list):
+                     self.heating_action_cont_index = base_env.actions.index(self.heating_action_name)
+                     # print(f"DEBUG [action_masks]: Found heating action index: {self.heating_action_cont_index}")
+                     # Now that we have the action index, check if we also have obs indices
+                     if self.zone_temp_obs_index != -1 and self.occupancy_proxy_obs_index != -1:
+                         self._masking_possible = True # Enable masking logic
+                         print(f"Info [action_masks]: Heating index found ({self.heating_action_cont_index}). Masking is now possible.")
+                     else:
+                          warnings.warn(f"[action_masks] Found heating index, but critical observation indices missing. Masking cannot be activated.", RuntimeWarning)
+                          self.masking_enabled = False # Disable permanently
+                else:
+                     warnings.warn(f"[action_masks] Base env missing/invalid 'actions' list when needed. Masking disabled.", RuntimeWarning)
+                     self.masking_enabled = False
+            except (ValueError, AttributeError, Exception) as e:
+                warnings.warn(f"[action_masks] Error finding heating action index '{self.heating_action_name}'. Masking disabled. Error: {e}", RuntimeWarning)
+                self.masking_enabled = False
+
+            # If lookup failed or we are still disabled, return default mask
+            if not self.masking_enabled or not self._masking_possible:
+                 return mask.astype(bool)
+
+        # --- Check again if masking is possible (might have failed above) ---
+        if not self._masking_possible:
+             return mask.astype(bool)
+
+        # --- Get Observation ---
+        # Access unwrapped env again for the observation
         try:
-            # Extract necessary observations
+            last_obs = self.env.unwrapped.last_raw_observation
+            if last_obs is None:
+                # This can happen right after reset before first step in some setups
+                # warnings.warn("action_masks called when last_raw_observation is None. Returning default mask.", RuntimeWarning)
+                return mask.astype(bool)
+        except AttributeError:
+             warnings.warn("[action_masks] Failed to get last_raw_observation from unwrapped env. Returning default mask.", RuntimeWarning)
+             return mask.astype(bool)
+
+
+        # --- Calculate Mask Logic ---
+        try:
+            # Check indices are valid before using them
+            if self.zone_temp_obs_index < 0 or self.occupancy_proxy_obs_index < 0 :
+                 warnings.warn(f"[action_masks] Invalid observation indices ({self.zone_temp_obs_index}, {self.occupancy_proxy_obs_index}). Skipping mask calculation.", RuntimeWarning)
+                 return mask.astype(bool) # Return default mask
+
             zone_temp = last_obs[self.zone_temp_obs_index]
             current_heating_sp_obs = last_obs[self.occupancy_proxy_obs_index]
 
-            # Determine occupancy based on the observed heating setpoint proxy
-            is_occupied = False # Default to unoccupied
+            # Determine occupancy (same as before)
+            is_occupied = False
             if abs(current_heating_sp_obs - self.occupied_heat_sp_val) <= self.setpoint_tolerance:
                 is_occupied = True
-            # Optional stricter check (uncomment if needed):
-            # elif abs(current_heating_sp_obs - self.unoccupied_heat_sp_val) <= self.setpoint_tolerance:
-            #     is_occupied = False
-            # else:
-            #     # This case means the SP is something unexpected
-            #     warnings.warn(f"Observed heating SP ({current_heating_sp_obs:.2f} K) doesn't match expected occ ({self.occupied_heat_sp_val:.1f} K) or unocc ({self.unoccupied_heat_sp_val:.1f} K). Assuming safety default (e.g., occupied).", RuntimeWarning)
-            #     is_occupied = True # Or False, depending on desired fallback
 
-            # Determine active comfort setpoints based on inferred occupancy
+            # Determine active comfort setpoints (same as before)
             if is_occupied:
                 current_upper_sp = self.occupied_upper_sp
                 current_lower_sp = self.occupied_lower_sp
-                # occ_status_str = "Occupied" # For debug print
             else:
                 current_upper_sp = self.unoccupied_upper_sp
                 current_lower_sp = self.unoccupied_lower_sp
-                # occ_status_str = "Unoccupied" # For debug print
 
-            # Check safety conditions (Temperature near the COMFORT setpoints)
+            # Check safety conditions (same as before)
             temp_near_upper = (zone_temp >= current_upper_sp - self.safety_margin)
             temp_near_lower = (zone_temp <= current_lower_sp + self.safety_margin)
 
-            # If temperature is too close to comfort bounds for the current mode, mask heating actions
+            # If temperature is too close, apply mask
             if temp_near_upper or temp_near_lower:
-                # Check if the list of heating actions exists and is not empty
-                if hasattr(self, 'heating_on_action_indices') and self.heating_on_action_indices:
-                     # Set corresponding entries in the mask to False (invalid action)
-                     mask[self.heating_on_action_indices] = False
-                     # --- Optional Debug Print ---
-                     # unit = "K" if self.assume_obs_in_kelvin else "C"
-                     # print(f"Debug Masking: T={zone_temp:.1f}{unit}. Mode={occ_status_str} (proxy SP={current_heating_sp_obs:.1f}K). Near Upper: {temp_near_upper} (SP={current_upper_sp:.1f}). Near Lower: {temp_near_lower} (SP={current_lower_sp:.1f}). Masking {len(self.heating_on_action_indices)} heating actions.")
-                     # --------------------------
+                 # Check heating action index is valid before using
+                 if self.heating_action_cont_index < 0:
+                      warnings.warn(f"[action_masks] Invalid heating action index ({self.heating_action_cont_index}). Cannot apply mask.", RuntimeWarning)
+                      return mask.astype(bool) # Return default mask
+
+                 # --- Calculate heating actions ON THE FLY ---
+                 heating_on_action_indices_now = []
+                 heating_off_bin_index = 0 # Assuming 0 is off
+                 for discrete_action_idx in range(self.action_space.n):
+                     bin_indices = self._get_indices(discrete_action_idx)
+                     # Additional safety check for index validity
+                     if self.heating_action_cont_index >= len(bin_indices):
+                          warnings.warn(f"Invalid heating_action_cont_index {self.heating_action_cont_index} vs bin_indices length {len(bin_indices)} for action {discrete_action_idx}. Skipping.", RuntimeWarning)
+                          continue
+
+                     heating_bin_index = bin_indices[self.heating_action_cont_index]
+                     if heating_bin_index != heating_off_bin_index:
+                         heating_on_action_indices_now.append(discrete_action_idx)
+                 # -----------------------------------------
+
+                 if heating_on_action_indices_now:
+                     mask[heating_on_action_indices_now] = False
+                     # print(f"DEBUG Masking Applied: T={zone_temp:.1f}. Masking {len(heating_on_action_indices_now)} actions.")
+
 
         except IndexError:
-             warnings.warn(f"IndexError accessing observation for masking (T_idx={self.zone_temp_obs_index}, OccProxy_idx={self.occupancy_proxy_obs_index}). Mask calculation skipped.", RuntimeWarning)
-             return np.ones(self.action_space.n, dtype=bool) # Return all valid
+             # This might happen if observation shape changes unexpectedly
+             warnings.warn(f"[action_masks] IndexError accessing observation (T_idx={self.zone_temp_obs_index}, OccProxy_idx={self.occupancy_proxy_obs_index}). Mask calculation skipped.", RuntimeWarning)
+             return np.ones(self.action_space.n, dtype=bool)
         except Exception as e:
-            warnings.warn(f"Error during mask calculation: {e}. Mask calculation skipped.", RuntimeWarning)
-            return np.ones(self.action_space.n, dtype=bool) # Return all valid
+            warnings.warn(f"[action_masks] Error during mask calculation logic: {e}. Mask calculation skipped.", RuntimeWarning)
+            return np.ones(self.action_space.n, dtype=bool)
 
-        # Ensure at least one action is always valid (e.g., the 'off' action)
+        # Ensure at least one action is valid (same as before)
         if not np.any(mask):
-            warnings.warn("All actions were masked by safety rules! Re-enabling action 0 as fallback.", RuntimeWarning)
-            # Assume action 0 corresponds to heating_off_bin_index for the heating dimension
-            # If action 0 IS a heating action and was masked, this might still fail.
-            # A more robust fallback would explicitly find the index for all-off actions.
-            # For now, assuming action 0 is safe:
+            warnings.warn("[action_masks] All actions were masked! Re-enabling action 0.", RuntimeWarning)
             mask[0] = True
 
-        return mask.astype(bool) # Return boolean mask
+        return mask.astype(bool)
 
 
     # --- OVERRIDE step and reset to include the mask ---
