@@ -2,7 +2,7 @@
 import os 
 import numpy as np
 from stable_baselines3.common.monitor import Monitor
-from .boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
+from .boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper, BoptestGymEnvRewardWeightDiscomfort
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 
 # --- MODIFIED function signature to accept log_dir ---
@@ -27,7 +27,7 @@ def make_env(env_cfg, rank, seed=0, log_dir=None):
         print(f"Environment {rank}: connecting to {boptest_url} with test case {env_cfg.testcase}, seed {env_seed}")
 
         # Create the base environment
-        base_env = BoptestGymEnv(
+        base_env = BoptestGymEnvRewardWeightDiscomfort(
             url=boptest_url,
             testcase=env_cfg.testcase,
             actions=env_cfg.actions,

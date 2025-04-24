@@ -2,6 +2,7 @@ defaults:
   - environments: vectorized
   - model: ppo
   - training: default
+  - evaluation: default
   - hydra: base    
   - _self_
 
