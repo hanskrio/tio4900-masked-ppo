@@ -1,0 +1,7 @@
+model_path: null # Set this via command line or specific config override! Example: evaluation.model_path=/path/to/your/model.zip
+
+# --- Optional Overrides ---
+episode_length_seconds: 604800   # 7 days * 24 hours/day * 3600 seconds/hour
+warmup_seconds: 86400            # 1 day * 24 hours/day * 3600 seconds/hour
+deterministic: true              # Use deterministic actions in evaluation
+plot_save_dir: evaluation_plots  # Subdirectory within hydra output for plots
