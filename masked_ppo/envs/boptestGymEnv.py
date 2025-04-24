@@ -1488,7 +1488,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
 
                  if heating_on_action_indices_now:
                      mask[heating_on_action_indices_now] = False
-                     # print(f"DEBUG Masking Applied: T={zone_temp:.1f}. Masking {len(heating_on_action_indices_now)} actions.")
+                     print(f"DEBUG Masking Applied: T={zone_temp:.1f}. Masking {len(heating_on_action_indices_now)} actions.")
 
 
         except IndexError:
