@@ -1,0 +1,14 @@
+# configs/training/large_network.yaml
+
+# Inherit all settings from the default training configuration
+defaults:
+  - default
+  - _self_  # Ensures this file's settings take precedence over defaults
+
+# Override only the policy_kwargs section
+policy_kwargs:
+  # Define a larger network architecture
+  # Example: Two hidden layers with 256 neurons each
+  net_arch: [256, 256]
+  # You could also specify separate actor/critic nets here if needed:
+  # net_arch: dict(pi=[256, 128], vf=[256, 128])

@@ -1,0 +1,22 @@
+# configs/training/split_actor_critic.yaml
+
+# Inherit all settings from the default training configuration
+defaults:
+  - default
+  - _self_  # Ensures this file's settings take precedence over defaults
+
+# Override policy_kwargs specifically for separate actor/critic networks
+policy_kwargs:
+  # For ActorCriticPolicy based models (like PPO), net_arch can be a dictionary
+  # specifying separate layer sizes for the policy ('pi') and value function ('vf').
+  net_arch:
+    pi: [256, 128]  # Example architecture for the policy network (actor)
+    vf: [256, 256]  # Example architecture for the value function network (critic)
+    # Note: You can make these the same or different sizes.
+    # Often, the value function might benefit from slightly more capacity.
+
+#Override total_timesteps here or via command line.
+total_timesteps: 1_000_000  # Example: Significantly increase timesteps
+
+# uncomment to adjust learning rate 
+# learning_rate: 0.0001

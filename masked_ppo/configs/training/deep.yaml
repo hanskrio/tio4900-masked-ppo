@@ -1,0 +1,26 @@
+# configs/training/deep.yaml
+
+# Inherit all settings from the default training configuration
+defaults:
+  - default
+  - _self_  # Ensures this file's settings take precedence over defaults
+
+# Override policy_kwargs specifically for a deeper architecture
+policy_kwargs:
+  # Example: 3 hidden layers, starting wider and narrowing.
+  # Represents a 'deeper' network compared to the default [64, 64] or a wider [512, 256].
+  net_arch: [256, 128, 64]
+
+# --- IMPORTANT CONSIDERATION ---
+# Deeper (and larger) networks typically require significantly MORE training steps
+# to converge and avoid underfitting compared to smaller networks.
+# The default 20,000 steps is likely far too low for this architecture.
+# You should override total_timesteps when using this config, either here or
+# via the command line.
+# Example override within this file:
+total_timesteps: 1_000_000  # Significantly increase timesteps for this deeper network run
+
+# You might also consider adjusting other hyperparameters like learning_rate
+# for deeper networks, potentially needing a smaller learning rate.
+# Example:
+# learning_rate: 0.0001
