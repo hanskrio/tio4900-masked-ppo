@@ -10,5 +10,3 @@ policy_kwargs:
   # Define a larger network architecture
   # Example: Two hidden layers with 256 neurons each
   net_arch: [256, 256]
-  # You could also specify separate actor/critic nets here if needed:
-  # net_arch: dict(pi=[256, 128], vf=[256, 128])
