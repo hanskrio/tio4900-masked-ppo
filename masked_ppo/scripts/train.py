@@ -1,4 +1,3 @@
-import datetime
 import os
 import sys
 
@@ -36,15 +35,6 @@ def main(cfg: DictConfig):
     # 'w' mode ensures a fresh stdout.log for each run in its specific directory
     try:
         with open(stdout_log_path, 'w') as f_stdout, contextlib.redirect_stdout(f_stdout):
-            # --- Optional: Log basic info to stdout.log as well ---
-            print(f"--- Stdout log for job started: {datetime.now()} ---")
-            print(f"Hydra output directory: {hydra_output_dir}")
-            print("Original command:", " ".join(sys.argv))
-            print("\nResolved Hydra Config:")
-            print(OmegaConf.to_yaml(cfg)) # Print config to stdout.log
-            print("\n--- Starting Experiment ---")
-            # --- End Optional Info ---
-
 
             # Check if distributed training is enabled (prints will go to stdout.log)
             if cfg.get("distributed", {}).get("enabled", False):
