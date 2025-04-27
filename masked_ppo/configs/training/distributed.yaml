@@ -1,7 +1,0 @@
-total_timesteps: 10_000  # Small number for testing
-
-distributed:
-  enabled: true
-  backend: "nccl"
-  world_size: 4
-  num_envs_per_gpu: 4
