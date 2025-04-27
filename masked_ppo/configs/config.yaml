@@ -1,11 +1,23 @@
 defaults:
-  - environments: vectorized
-  - model: ppo
-  - training: default
-  - evaluation: default
-  - hydra: base    
-  - _self_
+  - environments: vectorized  # Default environment setup
+  - model: maskable_ppo      # Default model type
+  - training: default        # Default training hyperparameters
+  - evaluation: default      # Default evaluation hyperparameters
+  - hydra: base
+  - _self_                   # Allows this file to override defaults
+  - optional distributed: default # Add this group for distributed flags
 
 hydra:
   run:
+    # Default for local runs. Slurm overrides this via command line.
     dir: ./outputs/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    # Default for local multiruns. Slurm overrides hydra.run.dir.
+    dir: ./multirun/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${hydra.job.num} # Use job num for subdir in multiruns
+
+# --- Distributed Settings Group ---
+# These are the *defaults*. HPC runs will override 'enabled'.
+distributed:
+  enabled: false     # CRITICAL: Default to False for local runs
+  backend: 'nccl'    # Default backend for multi-GPU (use 'gloo' for CPU testing)

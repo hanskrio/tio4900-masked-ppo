@@ -1,0 +1,3 @@
+# configs/distributed/default.yaml
+enabled: false
+backend: 'nccl'
