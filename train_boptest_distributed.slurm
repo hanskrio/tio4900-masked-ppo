@@ -72,8 +72,8 @@ echo "Launching $SLURM_NTASKS training processes with srun..."
 srun python masked_ppo/scripts/train_distributed.py --config-name=config \
     distributed.enabled=true \
     environments.vectorized.url="http://127.0.0.1:80" \
-    hydra.run.dir='slurm_ddp_outputs/\$SLURM_JOB_ID' \
-    hydra.sweep.dir='multirun/\${hydra.job.num}' # Example
+    hydra.run.dir='slurm_ddp_outputs/\$SLURM_JOB_ID'
+    #hydra.sweep.dir='multirun/\${hydra.job.num}' # Example
 
 EXIT_CODE=$?
 echo "srun finished with exit code $EXIT_CODE"
