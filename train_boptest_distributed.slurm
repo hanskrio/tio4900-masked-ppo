@@ -8,7 +8,7 @@
 #SBATCH --gres=gpu:4                  # Request all 4 A100 GPUs on the node
 #SBATCH --cpus-per-task=8             # Request 8 CPUs per task (Total 32 CPUs) - ADJUST AS NEEDED
 #SBATCH --mem=500G                    # Request 500GB total RAM for the job (adjust as needed) - SAFER than mem-per-cpu
-#SBATCH --time=00:15:00               # Time limit (HH:MM:SS) - Start small for testing!
+#SBATCH --time=00:45:00               # Time limit (HH:MM:SS) - Start small for testing!
 #SBATCH --output=slurm_ddp_res_%j.log # Log files specific to reservation runs
 #SBATCH --error=slurm_ddp_res_%j.log
 
