@@ -3,6 +3,7 @@
 #SBATCH --job-name=boptest_ddp_res    # Job name (added _res)
 #SBATCH --account=hanskrio
 #SBATCH --reservation=hanskrio        # !!! USE THE RESERVATION !!!
+#SBATCH --partition=GPUQ              # Partition name (GPUA100)
 #SBATCH --nodes=1                     # Reservation is for 1 node
 #SBATCH --ntasks=4                    # One task per GPU (world_size=4)
 #SBATCH --gres=gpu:4                  # Request all 4 A100 GPUs on the node
@@ -30,13 +31,12 @@ echo "-------------------------"
 
 # --- Environment Setup ---
 module purge
-module load Anaconda3/2023.09-0 # Example, use correct version
-module load Singularity/3.11.4  # Example, use correct version
+module load Anaconda3/2023.09-0
 # module load CUDA/XXX NCCL/YYY # Load specific CUDA/NCCL if IDUN requires
 
 source $(conda info --base)/etc/profile.d/conda.sh
 # !!! Use the FULL path to the env you created on IDUN Work !!!
-conda activate /cluster/work/users/your_username/conda_envs/boptestgym_hpc
+conda activate /cluster/work/hanskrio/conda_envs/boptestgym_hpc
 echo "Conda environment activated: $CONDA_DEFAULT_ENV"
 
 # --- Project Directory ---
