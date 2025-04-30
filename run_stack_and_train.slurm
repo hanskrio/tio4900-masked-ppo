@@ -12,7 +12,7 @@
 #SBATCH --gres=gpu:4                      # Request GPUs for training
 #SBATCH --cpus-per-task=10                # CPUs per training task + overhead for stack (e.g., 8 train + 2 stack = 10). Total = 4 * 10 = 40 CPUs
 #SBATCH --mem=500G                        # Total memory for stack + training (adjust)
-#SBATCH --time=02:00:00                   # Combined time needed (stack startup + training) (adjust!)
+#SBATCH --time=01:00:00                   # Combined time needed (stack startup + training) (adjust!)
 #SBATCH --output=slurm_stack_train_%j.log # Combined log file
 #SBATCH --error=slurm_stack_train_%j.log
 
