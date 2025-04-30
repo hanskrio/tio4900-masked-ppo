@@ -9,7 +9,7 @@ defaults:
 policy_kwargs:
   # Example: 3 hidden layers, starting wider and narrowing.
   # Represents a 'deeper' network compared to the default [64, 64] or a wider [512, 256].
-  net_arch: [256, 128, 128]
+  net_arch: [256, 128, 64]
 
 # --- IMPORTANT CONSIDERATION ---
 # Deeper (and larger) networks typically require significantly MORE training steps
