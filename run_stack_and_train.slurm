@@ -33,7 +33,6 @@ echo "-------------------------"
 
 # --- Environment Setup (Apptainer + Conda) ---
 module purge
-module load Apptainer                     # For running the stack
 module load Anaconda3/2023.09-0         # For running the training script
 source $(conda info --base)/etc/profile.d/conda.sh
 # Activate the Conda environment needed for train_distributed.py
