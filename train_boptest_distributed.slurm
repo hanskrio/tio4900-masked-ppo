@@ -31,12 +31,11 @@ echo "-------------------------"
 # --- Environment Setup ---
 module purge
 module load Anaconda3/2023.09-0 # Example, use correct version
-module load Singularity/3.11.4  # Example, use correct version
 # module load CUDA/XXX NCCL/YYY # Load specific CUDA/NCCL if IDUN requires
 
 source $(conda info --base)/etc/profile.d/conda.sh
 # !!! Use the FULL path to the env you created on IDUN Work !!!
-conda activate /cluster/work/users/your_username/conda_envs/boptestgym_hpc
+conda activate /cluster/work/users/hanskrio/conda_envs/boptestgym_hpc
 echo "Conda environment activated: $CONDA_DEFAULT_ENV"
 
 # --- Project Directory ---
