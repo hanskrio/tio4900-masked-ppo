@@ -1,6 +1,6 @@
 # Vectorized environment configuration for testing
 vectorized: true
-num_envs: 8  # For local runs or PER RANK on HPC.
+num_envs: 16  # For local runs or PER RANK on HPC.
              # Total envs on HPC = num_envs * world_size (SLURM_NTASKS).
               # Adjust based on node resources (--cpus-per-task, --mem-per-cpu).
 seed: 42  # Base seed, will be incremented for each environment
