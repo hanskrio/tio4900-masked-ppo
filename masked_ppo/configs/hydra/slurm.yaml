@@ -19,4 +19,4 @@ hydra:
     
     # Additional Slurm settings
     slurm_additional_parameters:
-      account: your_account  # Replace with your actual account
+      account: ntnu # Change to hanskrio if not on naic

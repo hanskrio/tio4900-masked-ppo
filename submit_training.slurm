@@ -96,7 +96,7 @@ python train.py \
     environments=vectorized \
     environments.num_envs=${NUM_WORKERS} \
     model=maskable_ppo \
-    training=default \
+    training=deep \
     distributed.enabled=false \
     # +training=deep # Example: Uncomment to use the deep training config
 

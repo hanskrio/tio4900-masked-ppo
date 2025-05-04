@@ -18,7 +18,7 @@ policy_kwargs:
 # You should override total_timesteps when using this config, either here or
 # via the command line.
 # Example override within this file:
-total_timesteps: 1_000_000  # Significantly increase timesteps for this deeper network run
+total_timesteps: 1_500_000  # Significantly increase timesteps for this deeper network run
 
 # You might also consider adjusting other hyperparameters like learning_rate
 # for deeper networks, potentially needing a smaller learning rate.
