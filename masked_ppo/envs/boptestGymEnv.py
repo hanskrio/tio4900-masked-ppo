@@ -18,7 +18,7 @@ from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 
-from masked_ppo.envs.examples.test_and_plot import plot_results, test_agent
+from .examples.test_and_plot import plot_results, test_agent
 
 
 #==============================================================================

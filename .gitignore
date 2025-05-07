@@ -3,3 +3,14 @@
 project1-boptest-0.7.1-2/service/provision/boptest_submit/__pycache__/__main__.cpython-38.pyc
 project1-boptest-0.7.1-2/service/provision/boptest_submit/__pycache__/boptest_submit.cpython-38.pyc
 project1-boptest-0.7.1-2/service/worker/requirements/production.txt
+
+conda_env/
+results/
+slurm_logs/
+
+# You might also want common Python/conda ignores if not elsewhere:
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/

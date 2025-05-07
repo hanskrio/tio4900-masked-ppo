@@ -439,3 +439,56 @@ cache/
 *.pth
 masked-ppo/.DS_Store
 masked-ppo/.DS_Store
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.env
+.venv/
+env/
+venv/
+
+# VSCode settings
+.vscode/
+*.code-workspace
+
+# Jupyter and IPython
+.ipynb_checkpoints/
+*.ipynb
+
+# SLURM and HPC outputs
+slurm-*.out
+*.log
+*.err
+*.out
+nohup.out
+
+# Data files
+*.csv
+*.h5
+*.pt
+*.npy
+*.npz
+*.pkl
+*.jsonl
+
+# Experiment results and caches
+results/
+runs/
+logs/
+output/
+cache/
+checkpoints/
+wandb/
+tensorboard/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Git
+*.swp

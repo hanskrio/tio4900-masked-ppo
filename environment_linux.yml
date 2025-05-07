@@ -58,7 +58,6 @@ dependencies:
       - tzdata==2023.3
       # --- ADDED MISSING PACKAGES ---
       - sb3-contrib # For MaskablePPO
-      - boptest-gym # For BOPTEST interaction
       - hydra-core  # For Hydra config
       - omegaconf   # Hydra dependency
       # - hydra-submitit-launcher # Optional: if using hydra launcher later
