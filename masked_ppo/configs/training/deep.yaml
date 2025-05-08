@@ -11,15 +11,12 @@ policy_kwargs:
   # Represents a 'deeper' network compared to the default [64, 64] or a wider [512, 256].
   net_arch: [256, 128, 128]
 
-# --- IMPORTANT CONSIDERATION ---
-# Deeper (and larger) networks typically require significantly MORE training steps
-# to converge and avoid underfitting compared to smaller networks.
-# The default 20,000 steps is likely far too low for this architecture.
-# You should override total_timesteps when using this config, either here or
-# via the command line.
-# Example override within this file:
-total_timesteps: 1_500_000  # Significantly increase timesteps for this deeper network run
+# Override specific hyperparameters for the 'deep' configuration
+total_timesteps: 1_500_000   # Example: Increase total steps for deeper network
 
-# You might also consider adjusting other hyperparameters like learning_rate
-# for deeper networks, potentially needing a smaller learning rate.
-learning_rate: 0.0001
+# --- PPO Specific Overrides ---
+#n_steps: 4096
+#batch_size: 512
+#n_epochs: 30
+# learning_rate: ??? # Add linear schedule definition if desired, or keep default for now
+# -----------------------------

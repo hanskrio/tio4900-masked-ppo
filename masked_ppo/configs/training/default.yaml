@@ -1,8 +1,24 @@
-total_timesteps: 20_000  # GLOBAL timesteps for the entire run, train_distributed.py already divides this by world_size.
+# configs/training/default.yaml
+total_timesteps: 1_000_000  # Example global total steps
 policy: 'MlpPolicy'
 gamma: 0.99
-learning_rate: 0.0003
+learning_rate: 0.0003      # You might want the linear schedule here too eventually
 verbose: 1
-seed: 4242
-policy_kwargs: # Arguments passed to the policy constructor
-  net_arch: [64, 64]
+seed: 42
+
+# --- PPO Specific Hyperparameters ---
+n_steps: 2048              # Default steps per env per rollout buffer collection
+batch_size: 64             # Default mini-batch size for optimization updates
+n_epochs: 10               # Default number of optimization epochs per rollout
+gae_lambda: 0.95           # Default GAE lambda
+clip_range: 0.2            # Default PPO clipping range
+ent_coef: 0.0              # Default entropy coefficient
+vf_coef: 0.5               # Default value function coefficient
+max_grad_norm: 0.5         # Default max gradient norm clipping
+# ------------------------------------
+
+policy_kwargs:             # Arguments passed to the policy constructor
+  net_arch: [64, 64]       # Default network size
+
+# Optional: Add checkpoint frequency
+#checkpoint_freq: 50000     # Save a checkpoint every 50k steps

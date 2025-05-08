@@ -2,64 +2,108 @@
 
 from sb3_contrib import MaskablePPO
 from stable_baselines3 import PPO
-from omegaconf import OmegaConf # <--- Import OmegaConf
+from stable_baselines3.common.utils import get_linear_fn 
+from omegaconf import OmegaConf 
 
+# Helper function to get values safely, though direct access is usually fine with defaults
+def safe_get(cfg: DictConfig, key: str, default=None):
+    return getattr(cfg, key, default)
 
-def create_model(model_cfg, training_cfg, env, device):
+def create_model(model_cfg: DictConfig, training_cfg: DictConfig, env, device: str):
     """Factory method that returns a model instance based on configs."""
-    
-    # Access type directly from model_cfg to match the flat structure
-    if hasattr(model_cfg, 'type'):
-        model_type = model_cfg.type.lower()
-    else:
-        # Fallback for when using command line arguments
-        model_type = model_cfg._name_.lower() if hasattr(model_cfg, '_name_') else "ppo"
-        print(f"Model type not explicitly defined in config. Using: {model_type}")
 
-    policy_kwargs_cfg = getattr(training_cfg, 'policy_kwargs', None)
-    policy_kwargs_dict = None # Initialize as None
+    model_type = safe_get(model_cfg, 'type', 'ppo').lower() # Default to ppo if type missing
+    print(f"Model Factory: Requested model type: {model_type}")
 
+    policy_kwargs_cfg = safe_get(training_cfg, 'policy_kwargs', None)
+    policy_kwargs_dict = None
     if policy_kwargs_cfg is not None:
-        # Optional: Print feedback about found kwargs
-        # print(f"Found policy_kwargs in config: {OmegaConf.to_yaml(policy_kwargs_cfg).strip()}")
         try:
-            # Convert OmegaConf object (like ListConfig for net_arch) to a standard Python dict/list.
             policy_kwargs_dict = OmegaConf.to_container(policy_kwargs_cfg, resolve=True)
-            # Optional: Print feedback about successful conversion
-            # print(f"Using policy_kwargs: {policy_kwargs_dict}")
+            print(f"Model Factory: Using policy_kwargs: {policy_kwargs_dict}")
         except Exception as e:
-            # Print an error message if conversion fails
-            print(f"[ERROR] Failed to convert policy_kwargs from OmegaConf: {e}. Using default policy arguments.")
-            policy_kwargs_dict = None # Fallback to None on error
-    # else:
-        # Optional: Print feedback if no kwargs found
-        # print("No policy_kwargs specified in training config. Using default policy arguments.")
+            print(f"[ERROR] Failed to convert policy_kwargs: {e}. Using None.")
+            policy_kwargs_dict = None
+
+    # --- Read PPO Hyperparameters from training_cfg ---
+    # Use getattr for safe access with defaults matching SB3 if not in config (though they should be)
+    lr = safe_get(training_cfg, 'learning_rate', 3e-4)
+    n_steps = safe_get(training_cfg, 'n_steps', 2048)
+    batch_size = safe_get(training_cfg, 'batch_size', 64)
+    n_epochs = safe_get(training_cfg, 'n_epochs', 10)
+    gamma = safe_get(training_cfg, 'gamma', 0.99)
+    gae_lambda = safe_get(training_cfg, 'gae_lambda', 0.95)
+    clip_range = safe_get(training_cfg, 'clip_range', 0.2)
+    ent_coef = safe_get(training_cfg, 'ent_coef', 0.0)
+    vf_coef = safe_get(training_cfg, 'vf_coef', 0.5)
+    max_grad_norm = safe_get(training_cfg, 'max_grad_norm', 0.5)
+    verbose = safe_get(training_cfg, 'verbose', 1)
+    seed = safe_get(training_cfg, 'seed', None) # Let SB3 handle None seed if needed
+
+
+    # --- Log the parameters being used ---
+    print("--- Model Factory: Final Parameters ---")
+    print(f"  policy: {safe_get(training_cfg, 'policy', 'MlpPolicy')}")
+    print(f"  env: {type(env)}")
+    print(f"  learning_rate: {lr}") # Print the actual value/function used
+    print(f"  n_steps: {n_steps}")
+    print(f"  batch_size: {batch_size}")
+    print(f"  n_epochs: {n_epochs}")
+    print(f"  gamma: {gamma}")
+    print(f"  gae_lambda: {gae_lambda}")
+    print(f"  clip_range: {clip_range}")
+    print(f"  ent_coef: {ent_coef}")
+    print(f"  vf_coef: {vf_coef}")
+    print(f"  max_grad_norm: {max_grad_norm}")
+    print(f"  policy_kwargs: {policy_kwargs_dict}")
+    print(f"  verbose: {verbose}")
+    print(f"  device: {device}")
+    print(f"  seed: {seed}")
+    print("-------------------------------------")
+
 
     if model_type == "maskable_ppo":
-        print("Creating MaskablePPO model")
+        print("Model Factory: Creating MaskablePPO model")
         return MaskablePPO(
-            policy=training_cfg.policy,
+            policy=safe_get(training_cfg, 'policy', 'MlpPolicy'),
             env=env,
-            gamma=training_cfg.gamma,
-            learning_rate=training_cfg.learning_rate,
-            verbose=training_cfg.verbose,
-            seed=training_cfg.seed,
+            learning_rate=lr,
+            n_steps=n_steps,
+            batch_size=batch_size,
+            n_epochs=n_epochs,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            clip_range=clip_range,
+            ent_coef=ent_coef,
+            vf_coef=vf_coef,
+            max_grad_norm=max_grad_norm,
+            policy_kwargs=policy_kwargs_dict,
+            verbose=verbose,
+            seed=seed,
             device=device,
-            policy_kwargs=policy_kwargs_dict
         )
 
     elif model_type == "ppo":
-        print("Creating PPO model")
+        print("Model Factory: Creating PPO model")
+        # Note: PPO doesn't support masking directly, ensure env/wrappers handle it if needed
         return PPO(
-            policy=training_cfg.policy,
+            policy=safe_get(training_cfg, 'policy', 'MlpPolicy'),
             env=env,
-            gamma=training_cfg.gamma,
-            learning_rate=training_cfg.learning_rate,
-            verbose=training_cfg.verbose,
-            seed=training_cfg.seed,
+            learning_rate=lr,
+            n_steps=n_steps,
+            batch_size=batch_size,
+            n_epochs=n_epochs,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            clip_range=clip_range,
+            ent_coef=ent_coef,
+            vf_coef=vf_coef,
+            max_grad_norm=max_grad_norm,
+            policy_kwargs=policy_kwargs_dict,
+            verbose=verbose,
+            seed=seed,
             device=device,
-            policy_kwargs=policy_kwargs_dict
         )
 
     else:
-        raise ValueError(f"Unknown model type: {model_type}")
+        raise ValueError(f"Unknown model type in factory: {model_type}")
