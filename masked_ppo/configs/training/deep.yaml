@@ -18,5 +18,5 @@ total_timesteps: 1_500_000   # Example: Increase total steps for deeper network
 #n_steps: 4096
 #batch_size: 512
 #n_epochs: 30
-# learning_rate: ??? # Add linear schedule definition if desired, or keep default for now
+learning_rate: 0.0001 # Add linear schedule definition if desired, or keep default for now
 # -----------------------------

@@ -4,7 +4,7 @@ policy: 'MlpPolicy'
 gamma: 0.99
 learning_rate: 0.0003      # You might want the linear schedule here too eventually
 verbose: 1
-seed: 42
+seed: 4242
 
 # --- PPO Specific Hyperparameters ---
 n_steps: 2048              # Default steps per env per rollout buffer collection

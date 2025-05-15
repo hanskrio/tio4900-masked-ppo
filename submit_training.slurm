@@ -114,7 +114,7 @@ python masked_ppo/scripts/train.py \
     hydra.run.dir="$RESULTS_DIR" \
     environments=vectorized \
     environments.num_envs=${NUM_WORKERS} \
-    model=maskable_ppo \
+    model=ppo \
     training=deep \
     distributed.enabled=false \
 
