@@ -12,11 +12,12 @@ policy_kwargs:
   net_arch: [256, 128, 128]
 
 # Override specific hyperparameters for the 'deep' configuration
-total_timesteps: 1_500_000   # Example: Increase total steps for deeper network
+total_timesteps: 800_000   # Example: Increase total steps for deeper network
 
 # --- PPO Specific Overrides ---
 #n_steps: 4096
 #batch_size: 512
 #n_epochs: 30
-learning_rate: 0.0001 # Add linear schedule definition if desired, or keep default for now
+#ent_coef: 0.1 
+learning_rate: 0.0003 # Add linear schedule definition if desired, or keep default for now
 # -----------------------------

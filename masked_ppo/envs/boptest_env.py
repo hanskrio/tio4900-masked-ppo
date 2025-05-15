@@ -4,6 +4,7 @@ import numpy as np
 from stable_baselines3.common.monitor import Monitor
 from .boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper, BoptestGymEnvRewardWeightDiscomfort
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
+from omegaconf import ListConfig
 
 # --- MODIFIED function signature to accept log_dir ---
 def make_env(env_cfg, rank, seed=0, log_dir=None):
@@ -26,11 +27,17 @@ def make_env(env_cfg, rank, seed=0, log_dir=None):
         # Log the connection details
         print(f"Environment {rank}: connecting to {boptest_url} with test case {env_cfg.testcase}, seed {env_seed}")
 
+        print(f"Rank {rank}: env_cfg.actions type: {type(env_cfg.actions)}, value: {env_cfg.actions}")
+        print(f"Rank {rank}: isinstance(env_cfg.actions, list): {isinstance(env_cfg.actions, list)}") # DEBUG - REMOVE THIS after job 36
+        print(f"Rank {rank}: isinstance(env_cfg.actions, ListConfig): {isinstance(env_cfg.actions, ListConfig)}") # DEBUG - REMOVE THIS after job 36
+
+        processed_actions = list(env_cfg.actions) if isinstance(env_cfg.actions, ListConfig) else env_cfg.actions # DEBUG - REMOVE THIS after job 36
+
         # Create the base environment
         base_env = BoptestGymEnvRewardWeightDiscomfort(
             url=boptest_url,
             testcase=env_cfg.testcase,
-            actions=env_cfg.actions,
+            actions=processed_actions,                                  # DEBUG - REMOVE THIS after job 36
             observations=env_cfg.observations,
             predictive_period=env_cfg.predictive_period,
             regressive_period=env_cfg.regressive_period,
@@ -40,6 +47,8 @@ def make_env(env_cfg, rank, seed=0, log_dir=None):
             step_period=env_cfg.step_period,
             excluding_periods=env_cfg.excluding_periods,
         )
+
+        print(f"Rank {rank}: base_env.actions type: {type(base_env.actions)}, value: {base_env.actions}")
 
         # Seed the environment (handle potential differences in gym versions)
         # Note: Seeding via reset is more common now, Monitor often handles initial reset.

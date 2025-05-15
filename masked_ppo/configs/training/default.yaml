@@ -4,11 +4,11 @@ policy: 'MlpPolicy'
 gamma: 0.99
 learning_rate: 0.0003      # You might want the linear schedule here too eventually
 verbose: 1
-seed: 4242
+seed: 42
 
 # --- PPO Specific Hyperparameters ---
 n_steps: 2048              # Default steps per env per rollout buffer collection
-batch_size: 64             # Default mini-batch size for optimization updates
+batch_size: 256             # Default mini-batch size for optimization updates
 n_epochs: 10               # Default number of optimization epochs per rollout
 gae_lambda: 0.95           # Default GAE lambda
 clip_range: 0.2            # Default PPO clipping range
