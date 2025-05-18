@@ -190,8 +190,7 @@ def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
     return df_res
 
 
-# --- Your Original Plotting Functions (Adapted) ---
-# (I'll use the names from your first post for clarity)
+# --- Adapted Plotting Functions ---
 
 def plot_boptest_style_results(df_res, controller_name="Controller", save_path=None):
     """
@@ -209,7 +208,7 @@ def plot_boptest_style_results(df_res, controller_name="Controller", save_path=N
         log.error(f"Plotting DataFrame missing required columns: {missing_cols}. Available: {df_res.columns.tolist()}")
         return
 
-    sns.set_style("darkgrid") # "dark" is not a valid style, "darkgrid" is common
+    sns.set_style("dark") 
     sns.set_context("paper")
     palette = sns.color_palette("muted") # Original autumn palette
 

@@ -1,7 +1,31 @@
+# maskable_ppo/configs/evaluation/default.yaml
+
 model_path: null # Set this via command line or specific config override! Example: evaluation.model_path=/path/to/your/model.zip
 
 # --- Optional Overrides ---
-episode_length_seconds: 604800   # 7 days * 24 hours/day * 3600 seconds/hour
-warmup_seconds: 86400            # 1 day * 24 hours/day * 3600 seconds/hour
-deterministic: true              # Use deterministic actions in evaluation
-plot_save_dir: evaluation_plots  # Subdirectory within hydra output for plots
+# episode_length_seconds: 604800   # 7 days * 24 hours/day * 3600 seconds/hour -> These are for the old eval, new eval uses env_warmup_days etc.
+# warmup_seconds: 86400            # 1 day * 24 hours/day * 3600 seconds/hour  -> These are for the old eval
+
+# --- BOPTEST Scenario and Simulation Timing (for autumn-style plots) ---
+scenario_test_start_day_in_case: 16 # e.g., Test period within BOPTEST data starts at Day 16
+scenario_warmup_days_boptest: 7     # e.g., BOPTEST data has its own 7-day warmup before Day 16 test period
+
+env_warmup_days: 7        # Gym env runs this as warmup (plotted), 7 * 86400 seconds
+env_test_days: 14         # Gym env runs this as test period (plotted), 14 * 86400 seconds
+
+deterministic: true       # Use deterministic actions in evaluation
+
+# --- Plot Saving Configuration ---
+# To save to a specific custom absolute path:
+custom_plot_save_root: "/Users/hanskrio/Desktop/NTNU/Masteroppgave/code/tio4900-masked-ppo/pics" # Set to your desired absolute base path
+# custom_plot_save_root: null # Uncomment this (and comment above) to default to Hydra's output directory
+
+plot_subdirectory_name: "evaluation_plots"  # Subfolder name within the custom_plot_save_root OR hydra_output_dir
+
+# This 'plot_save_dir' will now primarily be used as the subdirectory name if custom_plot_save_root is NOT set (i.e., when saving to Hydra's output)
+# It's a bit redundant with plot_subdirectory_name if custom_plot_save_root is set, but good for fallback.
+# Let's rename it for clarity if it's specifically for Hydra output.
+hydra_plot_subdirectory_name: "evaluation_boptest_style_plots" # Subdirectory within hydra output if custom_plot_save_root is null
+
+run_baseline: true
+run_detailed_agent_analysis: false # Set to true if you want the old agent-specific plots too
