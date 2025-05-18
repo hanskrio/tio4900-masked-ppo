@@ -1496,7 +1496,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
 
                 if actions_to_mask_indices:
                     mask[actions_to_mask_indices] = False
-                    print(f"DEBUG MASK APPLIED (Revised): Tzone={zone_temp:.2f}K | Occupied={is_occupied} | Condition='{reason_for_masking}' | Masked Heat Bins={sorted(list(bins_to_mask))} | Actions Masked={len(actions_to_mask_indices)}/{self.action_space.n}")
+                    #print(f"DEBUG MASK APPLIED (Revised): Tzone={zone_temp:.2f}K | Occupied={is_occupied} | Condition='{reason_for_masking}' | Masked Heat Bins={sorted(list(bins_to_mask))} | Actions Masked={len(actions_to_mask_indices)}/{self.action_space.n}")
 
         except (IndexError, ValueError) as e:
              warnings.warn(f"[action_masks] Error during mask calculation: {e}. Mask calculation skipped.", RuntimeWarning)

@@ -3,9 +3,9 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1                     # 1 main Python task
-#SBATCH --cpus-per-task=6             # Request CPU cores 
+#SBATCH --cpus-per-task=12             # Request CPU cores 
 #SBATCH --mem=64G                      # Request memory 
-#SBATCH --time=14:00:00              # Request runtime 
+#SBATCH --time=12:00:00              # Request runtime 
 #SBATCH --output=/home/ntnu/tio4900-masked-ppo/slurm_logs/boptest_ppo_%j.out # Log SLURM stdout
 #SBATCH --error=/home/ntnu/tio4900-masked-ppo/slurm_logs/boptest_ppo_%j.err  # Log SLURM stderr
 
