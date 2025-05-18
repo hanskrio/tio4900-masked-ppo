@@ -8,9 +8,11 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')) 
-if project_root not in sys.path:
-     sys.path.insert(0, project_root)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+    log.info(f"Added project root to Python path: {PROJECT_ROOT}")
+# --- End Path Adjustment ---
 
 try:
     from envs.boptest_env import make_boptest_env
@@ -28,7 +30,7 @@ except ImportError as e:
     log.error(f"Failed to import necessary modules: {e}", exc_info=True)
     sys.exit(1)
 
-@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+@hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
     log.info("--- Starting BOPTEST Style Evaluation ---")
     # ... (device setup, model_path, hydra_output_dir setup as before) ...
@@ -241,14 +243,22 @@ def main(cfg: DictConfig):
         agent_eval_vec_env_detailed.close()
 
         if kpis_agent_detailed: log.info(f"Agent Detailed KPIs: {kpis_agent_detailed}")
-        if not df_agent_detailed.empty:
-            detailed_plot_filename = f"agent_specific_details_{model_name}_{timestamp}.png"
-            plot_agent_specific_evaluation_results(
-                df_agent_detailed, model_name=model_name,
-                save_path=os.path.join(plot_save_dir_base, detailed_plot_filename)
-            )
+        if 'df_agent_detailed' in locals() and not df_agent_detailed.empty: # Check df_agent_detailed exists
+            if final_plot_save_dir: # Only attempt to save if directory is valid
+                detailed_plot_filename = f"agent_specific_details_{model_name}_{timestamp}.png"
+                detailed_plot_save_path = os.path.join(final_plot_save_dir, detailed_plot_filename)
+                plot_agent_specific_evaluation_results(
+                    df_agent_detailed, model_name=model_name,
+                    save_path=detailed_plot_save_path
+                )
+            else: # Directory not valid, just show the plot
+                log.warning("Plot save directory not valid. Showing detailed agent plot without saving.")
+                plot_agent_specific_evaluation_results(
+                    df_agent_detailed, model_name=model_name,
+                    save_path=None
+                )
         else:
-            log.warning("Agent detailed analysis DataFrame is empty, skipping specific plot.")
+            log.warning("Agent detailed analysis DataFrame is empty or not generated, skipping specific plot.")
             
     log.info("--- Evaluation Finished ---")
 
