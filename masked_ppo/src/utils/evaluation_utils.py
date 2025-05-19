@@ -131,7 +131,9 @@ def run_simulation_episode(model: BaseAlgorithm, env_instance, deterministic=Tru
                     "Attributes missing or invalid (max_episode_length, step_period). Relying on done flag.")
 
     while not (terminated or truncated):
-        action_to_take = [] 
+        # Initialize action_to_take, will be overwritten by agent or baseline logic
+        action_to_take = None 
+
         if model: # RL Agent
             is_model_maskable = is_maskable_ppo_available and isinstance(model, MaskablePPO)
 
@@ -142,13 +144,11 @@ def run_simulation_episode(model: BaseAlgorithm, env_instance, deterministic=Tru
                 
                 if action_mask is None: 
                     log.warning("Action mask is None for MaskablePPO. Defaulting to all actions allowed.")
-                    # Ensure action_space.n is accessible from the env_instance passed to the function
                     if hasattr(env_instance, 'action_space') and hasattr(env_instance.action_space, 'n'):
                         action_mask = np.ones(env_instance.action_space.n, dtype=bool)
                     else:
-                        log.error("Cannot determine action space size for default mask. MaskablePPO might fail.")
-                        # Potentially raise an error or handle differently
-                        action_mask = np.array([True]) # Placeholder, likely incorrect
+                        log.error("Cannot determine action space size for default mask for MaskablePPO.")
+                        action_mask = np.array([True]) 
                 
                 action_to_take, _ = model.predict(
                     obs,
@@ -162,6 +162,15 @@ def run_simulation_episode(model: BaseAlgorithm, env_instance, deterministic=Tru
                     obs,
                     deterministic=deterministic
                 )
+        else: # Baseline run (model is None)
+            action_to_take = 0 
+            log.debug(f"Baseline run: using discrete action {action_to_take} for DiscretizedActionWrapper pass-through.")
+        
+        # Ensure action_to_take is not None before proceeding (should be set by if/else)
+        if action_to_take is None:
+            log.error("action_to_take was not set! This should not happen.")
+            # Fallback to a safe default or raise error
+            action_to_take = 0 # Or handle error more gracefully
         
         # Step the outermost environment instance
         obs, reward, terminated, truncated, info = env_instance.step(action_to_take) 

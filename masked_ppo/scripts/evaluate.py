@@ -35,8 +35,6 @@ def main(cfg: DictConfig):
 
     if torch.cuda.is_available() and cfg.get("device", "cuda") == "cuda":
         device = "cuda"
-    elif torch.backends.mps.is_available() and cfg.get("device", "mps") == "mps": # Added MPS check
-        device = "mps"
     else:
         device = "cpu"
     log.info(f"Using device: {device}")
@@ -131,7 +129,8 @@ def main(cfg: DictConfig):
     agent_env_cfg.num_envs = 1
     agent_env_cfg.vectorized = False 
     log.info(f"Agent actions set to: {agent_env_cfg.boptest.actions}")
-    
+    log.info(f"DEBUG evaluate.py: AGENT_ENV_CFG before make_boptest_env:\n{OmegaConf.to_yaml(agent_env_cfg)}")
+
     agent_eval_vec_env = make_boptest_env(agent_env_cfg, output_dir=None) # Pass modified config
     agent_eval_env_instance = agent_eval_vec_env.envs[0]
 
@@ -189,7 +188,8 @@ def main(cfg: DictConfig):
         baseline_env_cfg.num_envs = 1
         baseline_env_cfg.vectorized = False
         log.info(f"Baseline actions set to: {baseline_env_cfg.boptest.actions}")
-        
+        log.info(f"DEBUG evaluate.py: BASELINE_ENV_CFG before make_boptest_env:\n{OmegaConf.to_yaml(baseline_env_cfg)}")
+
         baseline_eval_vec_env = make_boptest_env(baseline_env_cfg, output_dir=None)
         baseline_eval_env_instance = baseline_eval_vec_env.envs[0]
         
