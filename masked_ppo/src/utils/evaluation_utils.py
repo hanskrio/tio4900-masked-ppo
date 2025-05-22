@@ -209,6 +209,13 @@ def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
     
     url = base_env.url
 
+    # === GET testid FROM base_env ===
+    # Your BoptestGymEnv class initializes self.testid
+    if not hasattr(base_env, 'testid') or not base_env.testid:
+        log.error("base_env does not have a valid 'testid' attribute. Cannot make /results call.")
+        return pd.DataFrame()
+    testid = base_env.testid
+
     # Determine the time range for the API call based on your original logic
     # data_request_start_time: This is the BOPTEST scenario start time,
     #                          PLUS the BOPTEST warmup period. This is when data for the
@@ -265,7 +272,7 @@ def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
 
     # The duration of the agent's interaction is base_env.max_episode_length.
     # So the plot data ends at plot_data_start_time_abs + base_env.max_episode_length.
-    plot_data_end_time_abs = plot_data_start_time_abs + base_env.max_episode_length
+    plot_data_end_time_abs = plot_data_start_time_abs + base_env.max_episode_length 
     
     # The /results API needs the range of data we want to fetch.
     # This should cover the entire period the agent interacted with, plus any initial state.
@@ -285,6 +292,7 @@ def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
         'final_time': plot_data_end_time_abs   # Fetch until agent's episode ends
     }
     
+    results_url = f'{url.strip("/")}/results/{testid}' # Ensure no double slashes if url ends with /
     log.info(f"Fetching results from BOPTEST API: {url}/results")
     log.info(f"Requesting points: {points_to_log}")
     log.info(f"Requesting data from BOPTEST time {args['start_time']} to {args['final_time']}")
@@ -292,9 +300,12 @@ def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
     try:
         # Use a session if available on base_env, otherwise requests directly
         requester = getattr(base_env, 'session', requests) 
-        response = requester.put(f'{url}/results', json=args, timeout=30) # Increased timeout
+        log.info(f"Attempting PUT to {results_url} with payload: {args}")
+        response = requester.put(results_url, json=args, timeout=30) # Use the new results_url
         response.raise_for_status() 
+        log.info(f"PUT to {results_url} successful.")
         res_json = response.json()
+
         if 'payload' not in res_json:
             log.error(f"BOPTEST API response missing 'payload'. Response: {res_json}")
             return pd.DataFrame()
@@ -348,6 +359,14 @@ def plot_boptest_style_results(df_res, controller_name="Controller", save_path=N
 
     plt.figure(figsize=(12, 8))
     plt.suptitle(f"Performance: {controller_name}", fontsize=16)
+
+    # === DEBUG PRINT HERE ===
+    if 'time_days' in df_res.columns and not df_res['time_days'].empty:
+        log.info(f"PLOT DEBUG for {controller_name}: df_res['time_days'] min: {df_res['time_days'].min()}, max: {df_res['time_days'].max()}, count: {len(df_res)}")
+    else:
+        log.warning(f"PLOT DEBUG for {controller_name}: 'time_days' column missing or empty in df_res.")
+        return # Cannot plot without time_days
+    # === END DEBUG PRINT ===
 
     # Plot zone temperature and setpoints
     ax1 = plt.subplot(3, 1, 1)
