@@ -22,11 +22,11 @@ except ImportError:
 try:
     from envs.boptest_env import BoptestGymEnv as ProjectBoptestGymEnv
 except ImportError:
-    log.error("Could not import ProjectBoptestGymEnv from envs.boptest_env. Unwrapping might be unreliable.")
+    print("Could not import ProjectBoptestGymEnv from envs.boptest_env. Unwrapping might be unreliable.")
     ProjectBoptestGymEnv = None # Fallback
 
-
 log = logging.getLogger(__name__) # For better logging
+
 
 # Constants for BOPTEST API data fetching
 SECONDS_PER_DAY = 86_400
@@ -201,139 +201,112 @@ def run_simulation_episode(model: BaseAlgorithm, env_instance, deterministic=Tru
 def fetch_boptest_results_for_plotting(env_instance, points_to_log=None):
     """
     Retrieves detailed simulation data from the BOPTEST /results API endpoint
-    for the *entire duration* the environment was configured to run.
-    This version uses logic similar to your original plotting.py.
+    for the period the controller is active. Makes a single API call.
     """
-    # Get the specific BoptestGymEnv instance that has .start_time, .warmup_period etc.
     base_env = get_custom_boptest_env_instance(env_instance)
-    
     url = base_env.url
-
-    # === GET testid FROM base_env ===
-    # Your BoptestGymEnv class initializes self.testid
+    
     if not hasattr(base_env, 'testid') or not base_env.testid:
-        log.error("base_env does not have a valid 'testid' attribute. Cannot make /results call.")
+        log.error("base_env does not have a valid 'testid' attribute. Cannot make /results API calls.")
         return pd.DataFrame()
     testid = base_env.testid
 
-    # Determine the time range for the API call based on your original logic
-    # data_request_start_time: This is the BOPTEST scenario start time,
-    #                          PLUS the BOPTEST warmup period. This is when data for the
-    #                          agent's view (including gym's warmup) actually begins.
-    # Your old script used base_env.start_time for the API call.
-    # This 'start_time' from constructor is the BOPTEST scenario start (e.g. Day 9).
-    # The data for the *plotted period* (gym warmup + gym test) starts *after* BOPTEST's
-    # own warmup specified in the /initialize call.
-    # The /initialize call uses `base_env.start_time` and `base_env.warmup_period`.
-    # So, the first data point available to the agent (and for plotting) is at
-    # BOPTEST time = base_env.start_time + base_env.warmup_period.
-
-    api_call_start_time = base_env.start_time + base_env.warmup_period
-
-    # data_request_final_time: This is the end of the agent's test period.
-    # The total duration plotted is gym's warmup_period + gym's max_episode_length
-    # In your main evaluation script, env_warmup_seconds and env_test_seconds
-    # are used to set base_env.warmup_period and base_env.max_episode_length.
-    
-    # The 'warmup_period' used for the Gym environment (from eval_cfg.env_warmup_days)
-    # is different from the 'warmup_period' passed to BOPTEST /initialize.
-    # Let's clarify from your evaluation script:
-    # absolute_start_time_for_env (e.g. Day 9) is passed as 'start_time' to BoptestGymEnv constructor.
-    # env_warmup_seconds (e.g. 7 days) is passed as 'warmup_period' to BoptestGymEnv constructor.
-    # env_test_seconds (e.g. 14 days) is passed as 'max_episode_length' to BoptestGymEnv constructor.
-    
-    # So, base_env.start_time IS absolute_start_time_for_env.
-    # base_env.warmup_period IS env_warmup_seconds.
-    # base_env.max_episode_length IS env_test_seconds.
-
-    # The API call should cover the period from the end of BOPTEST's internal warmup
-    # up to the end of the agent's run (which includes the gym's warmup and test periods).
-    # Start of plotted data (absolute BOPTEST time): base_env.start_time + base_env.warmup_period
-    # Duration of plotted data: base_env.max_episode_length (which is the "test period" for the agent)
-    #                         PLUS an additional period if your old plotting included its own warmup.
-    # Your original benchmark_controller.py:
-    #   warmup_period = 7 * SECONDS_PER_DAY (this is env_warmup_seconds for BoptestGymEnv)
-    #   test_period = 14 * SECONDS_PER_DAY (this is max_episode_length for BoptestGymEnv)
-    #   total_simulation_time = warmup_period + test_period
-    # Your original plotting.py:
-    #   start_time = base_env.start_time (e.g. Day 9)
-    #   sim_time = start_time + base_env.max_episode_length (e.g. Day 9 + 14 days)
-    # This seems to imply the original plots did NOT include the `base_env.warmup_period` in the plotted data.
-    # Or rather, `base_env.start_time` was the start of the agent's interaction.
-    
-    # Let's strictly follow your original plotting.py logic for API times:
-    api_call_start_for_results = base_env.start_time # This is the BOPTEST scenario start time.
-                                                     # BOPTEST /initialize is called with this start_time and base_env.warmup_period.
-                                                     # The first observation the agent sees is at base_env.start_time + base_env.warmup_period.
-                                                     # The plot should start from this point.
-    
-    # The data for plotting starts *after* BOPTEST's initialize warmup.
-    plot_data_start_time_abs = base_env.start_time + base_env.warmup_period
-
-    # The duration of the agent's interaction is base_env.max_episode_length.
-    # So the plot data ends at plot_data_start_time_abs + base_env.max_episode_length.
-    plot_data_end_time_abs = plot_data_start_time_abs + base_env.max_episode_length 
-    
-    # The /results API needs the range of data we want to fetch.
-    # This should cover the entire period the agent interacted with, plus any initial state.
-
-    log.info(f"Debug: base_env.start_time (constructor): {base_env.start_time}")
-    log.info(f"Debug: base_env.warmup_period (constructor): {base_env.warmup_period}")
-    log.info(f"Debug: base_env.max_episode_length (constructor): {base_env.max_episode_length}")
-    log.info(f"Debug: Plot data should start (abs BOPTEST time): {plot_data_start_time_abs}")
-    log.info(f"Debug: Plot data should end (abs BOPTEST time): {plot_data_end_time_abs}")
-
     if points_to_log is None:
         points_to_log = DEFAULT_BOPTEST_POINTS_TO_LOG_FOR_PLOTS
+
+    # --- Determine overall desired time window for the API call ---
+    # This is when the agent's/baseline's active period starts (after BOPTEST init warmup)
+    api_call_start_time = base_env.start_time + base_env.warmup_period
+    # This is when the agent's/baseline's active period ends
+    api_call_final_time = api_call_start_time + base_env.max_episode_length
     
-    args = {
+    # Debug logs for the constructor-derived values and calculated API times
+    log.info(f"Debug fetch: base_env.start_time (constructor): {getattr(base_env, 'start_time', 'N/A')}")
+    log.info(f"Debug fetch: base_env.warmup_period (constructor): {getattr(base_env, 'warmup_period', 'N/A')}")
+    log.info(f"Debug fetch: base_env.max_episode_length (constructor): {getattr(base_env, 'max_episode_length', 'N/A')}")
+    log.info(f"Debug fetch: API data fetch start (abs BOPTEST time): {api_call_start_time}")
+    log.info(f"Debug fetch: API data fetch end (abs BOPTEST time): {api_call_final_time}")
+
+    api_args = {
         'point_names': points_to_log,
-        'start_time': plot_data_start_time_abs, # Start fetching from when agent's episode begins
-        'final_time': plot_data_end_time_abs   # Fetch until agent's episode ends
+        'start_time': int(api_call_start_time), # Ensure integers for JSON
+        'final_time': int(api_call_final_time)
     }
+    results_url = f'{url.strip("/")}/results/{testid}' # Use testid in path
     
-    results_url = f'{url.strip("/")}/results/{testid}' # Ensure no double slashes if url ends with /
-    log.info(f"Fetching results from BOPTEST API: {url}/results")
+    log.info(f"Fetching results: PUT {results_url}")
     log.info(f"Requesting points: {points_to_log}")
-    log.info(f"Requesting data from BOPTEST time {args['start_time']} to {args['final_time']}")
+    log.info(f"Requesting data from BOPTEST time {api_args['start_time']} to {api_args['final_time']}")
 
+    df_res = pd.DataFrame() # Initialize to ensure it's always defined
     try:
-        # Use a session if available on base_env, otherwise requests directly
-        requester = getattr(base_env, 'session', requests) 
-        log.info(f"Attempting PUT to {results_url} with payload: {args}")
-        response = requester.put(results_url, json=args, timeout=30) # Use the new results_url
-        response.raise_for_status() 
-        log.info(f"PUT to {results_url} successful.")
+        requester = getattr(base_env, 'session', requests)
+        response = requester.put(results_url, json=api_args, timeout=45) # Increased timeout
+        response.raise_for_status() # This will raise an HTTPError if the server returns 4xx or 5xx
+        
         res_json = response.json()
+        if 'payload' in res_json and isinstance(res_json['payload'], dict) and res_json['payload']:
+            df_res = pd.DataFrame(data=res_json['payload'])
+            log.info(f"PUT to {results_url} successful. Fetched {len(df_res)} initial points.")
+        else:
+            log.warning(f"PUT to {results_url} successful, but no 'payload' or empty payload in response. Response JSON: {res_json}")
+            return pd.DataFrame() # Return empty if no valid payload
 
-        if 'payload' not in res_json:
-            log.error(f"BOPTEST API response missing 'payload'. Response: {res_json}")
-            return pd.DataFrame()
-        df_res = pd.DataFrame(data=res_json['payload'])
-    # ... (rest of error handling and DataFrame processing as before) ...
-    except requests.exceptions.RequestException as e:
-        log.error(f"Error connecting to BOPTEST API or bad response: {e}")
+    except requests.exceptions.HTTPError as http_err:
+        log.error(f"HTTP error during BOPTEST API call to {results_url}: {http_err}")
+        log.error(f"Response status: {http_err.response.status_code}, Response text: {http_err.response.text}")
+        return pd.DataFrame() # Return empty on HTTP error
+    except requests.exceptions.RequestException as req_err: # Other request errors
+        log.error(f"Request error during BOPTEST API call to {results_url}: {req_err}")
         return pd.DataFrame()
-    except ValueError: 
-        log.error(f"Error decoding JSON response from BOPTEST API. Response text: {response.text if 'response' in locals() else 'Unknown response'}")
+    except ValueError as json_err: # JSON decoding error
+        log.error(f"Error decoding JSON response from {results_url}. Error: {json_err}")
+        log.error(f"Response text: {response.text if 'response' in locals() else 'Unknown response text'}")
+        return pd.DataFrame()
+    except Exception as e: # Catch-all for other unexpected errors
+        log.error(f"Unexpected error during API call or initial processing for {results_url}: {e}", exc_info=True)
         return pd.DataFrame()
 
-    if df_res.empty:
-        log.warning(f"No data retrieved from BOPTEST for period {args['start_time']} to {args['final_time']}.")
+    # --- SERVER RESPONSE DEBUG ---
+    # (This block is useful to keep, it tells us what the server actually sent back)
+    if not df_res.empty and 'time' in df_res.columns and not df_res['time'].empty:
+        actual_first_abs_time = df_res['time'].iloc[0]
+        actual_last_abs_time = df_res['time'].iloc[-1]
+        actual_duration_seconds = actual_last_abs_time - actual_first_abs_time
+        actual_duration_days = actual_duration_seconds / SECONDS_PER_DAY
+        log.info(f"SERVER RESPONSE DEBUG: First absolute time in payload: {actual_first_abs_time}")
+        log.info(f"SERVER RESPONSE DEBUG: Last absolute time in payload:  {actual_last_abs_time}")
+        log.info(f"SERVER RESPONSE DEBUG: Actual duration in payload (seconds): {actual_duration_seconds}")
+        log.info(f"SERVER RESPONSE DEBUG: Actual duration in payload (days):   {actual_duration_days:.2f}")
+        log.info(f"SERVER RESPONSE DEBUG: Number of points in payload: {len(df_res)}")
+    elif not df_res.empty and 'time' not in df_res.columns:
+            log.error("SERVER RESPONSE DEBUG: df_res is not empty BUT 'time' column missing in API payload!")
+    elif df_res.empty:
+        log.warning("SERVER RESPONSE DEBUG: df_res is empty after API response (or error during fetch).")
+    # --- END SERVER RESPONSE DEBUG ---
+
+
+    if df_res.empty: # Check again after debug block, in case it was returned empty from try/except
+        log.warning(f"No data retrieved from BOPTEST for period {api_args['start_time']} to {api_args['final_time']}.")
         return df_res
 
+    # Ensure 'time' column exists and is not empty before proceeding
     if 'time' not in df_res.columns or df_res['time'].empty:
-        log.error("Fetched data is missing 'time' column or is empty.")
-        return pd.DataFrame()
+        log.error("Fetched data is valid DataFrame but missing 'time' column or 'time' column is empty.")
+        return pd.DataFrame() # Cannot proceed without time
         
+    # --- Time Adjustment for Plotting ---
     df_res['time_original_boptest'] = df_res['time'] 
-    df_res['time'] = df_res['time'] - df_res['time'].iloc[0] # Make time relative to start of fetched data
+    df_res['time'] = df_res['time'] - df_res['time_original_boptest'].iloc[0] 
     df_res['time_hours'] = df_res['time'] / 3600
     df_res['time_days'] = df_res['time_hours'] / 24
     
-    log.info(f"Successfully fetched {len(df_res)} data points for plotting.")
-    return df_res
+    # --- PLOT DEBUG Log (after all processing) ---
+    if 'time_days' in df_res.columns and not df_res['time_days'].empty:
+        log.info(f"PLOT DEBUG (single fetch): df_res['time_days'] min: {df_res['time_days'].min()}, max: {df_res['time_days'].max()}, count: {len(df_res)}")
+    # ---
 
+    return df_res
 
 # --- Adapted Plotting Functions ---
 
