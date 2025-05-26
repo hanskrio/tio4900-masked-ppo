@@ -8,10 +8,10 @@ model_path: null # Set this via command line or specific config override! Exampl
 
 # --- BOPTEST Scenario and Simulation Timing (for autumn-style plots) ---
 scenario_test_start_day_in_case: 16 # e.g., Test period within BOPTEST data starts at Day 16
-scenario_warmup_days_boptest: 7     # e.g., BOPTEST data has its own 7-day warmup before Day 16 test period
+scenario_warmup_days_boptest: 2     # e.g., BOPTEST data has its own 7-day warmup before Day 16 test period
 
-env_warmup_days: 7        # Gym env runs this as warmup (plotted), 7 * 86400 seconds
-env_test_days: 14         # Gym env runs this as test period (plotted), 14 * 86400 seconds
+env_warmup_days: 2        # Gym env runs this as warmup (plotted), 7 * 86400 seconds
+env_test_days: 16         # Gym env runs this as test period (plotted), 14 * 86400 seconds
 
 deterministic: true       # Use deterministic actions in evaluation
 

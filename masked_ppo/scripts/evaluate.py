@@ -127,7 +127,8 @@ def main(cfg: DictConfig):
     agent_env_cfg.warmup_period = env_warmup_seconds
     agent_env_cfg.max_episode_length = env_test_seconds
     agent_env_cfg.num_envs = 1
-    agent_env_cfg.vectorized = False 
+    agent_env_cfg.vectorized = False
+    agent_env_cfg.excluding_periods = None # <--- ADD THIS for testing at inference
     log.info(f"Agent actions set to: {agent_env_cfg.boptest.actions}")
     log.info(f"DEBUG evaluate.py: AGENT_ENV_CFG before make_boptest_env:\n{OmegaConf.to_yaml(agent_env_cfg)}")
 
@@ -187,6 +188,7 @@ def main(cfg: DictConfig):
         baseline_env_cfg.max_episode_length = env_test_seconds
         baseline_env_cfg.num_envs = 1
         baseline_env_cfg.vectorized = False
+        baseline_env_cfg.excluding_periods = None # <--- ADD THIS for testing at inference
         log.info(f"Baseline actions set to: {baseline_env_cfg.boptest.actions}")
         log.info(f"DEBUG evaluate.py: BASELINE_ENV_CFG before make_boptest_env:\n{OmegaConf.to_yaml(baseline_env_cfg)}")
 
