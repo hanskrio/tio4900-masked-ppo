@@ -15,7 +15,6 @@ This repository contains the code for:
 *   **Maskable PPO Agent:** Utilizes MaskablePPO from `sb3-contrib` to allow state-dependent action masking, guiding the agent towards safe and efficient policies.
 *   **Conditional Wrappers:** Environment wrappers for observation normalization and action discretization that can be toggled via configuration.
 *   **Configuration-Driven Experiments:** Uses Hydra for managing experiment configurations, allowing for easy sweeps and ablation studies.
-*   **Detailed Logging:** Leverages `wandb` (Weights & Biases) [or TensorBoard, or your chosen logging tool] for experiment tracking and visualization.
 
 ## Project Structure
 *TBD*
