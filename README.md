@@ -17,7 +17,7 @@ This repository contains the code for:
 *   **Configuration-Driven Experiments:** Uses Hydra for managing experiment configurations, allowing for easy sweeps and ablation studies.
 
 ## Project Structure
-*TBD*
+The main DRL logic and package is within the `masked_ppo/` directory:
 
 ## Setup and Installation
 
@@ -110,8 +110,11 @@ Experiments are managed using [Hydra](https://hydra.cc/). The main training scri
     *   Integrates with Hydra for configuration management.
     *   [Integrates with `wandb` or other logging tools].
 
-## Results and Analysis
 
-[Briefly describe where results are stored (e.g., `results/` directory, `wandb` dashboards) and how to reproduce key analyses or plots, perhaps pointing to specific notebooks in `notebooks/`.]
+## License
+This project is licensed under the GPL-3.0 License - see the `LICENSE` file for details.
 
-Example: "Trained models are saved in `results/[experiment_name]/models/`. Training logs and metrics can be viewed on our [Weights & Biases project dashboard]([Link to your W&B project]). Key performance plots and ablation study analyses can be reproduced using the Jupyter notebooks in the `notebooks/` directory."
+## Acknowledgements
+* The BOPTEST development team.
+* The Stable Baselines3 and SB3-Contrib maintainers.
+* Norwegian AI Could 
