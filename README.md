@@ -112,7 +112,7 @@ Experiments are managed using [Hydra](https://hydra.cc/). The main training scri
 
 
 ## License
-This project is licensed under the GPL-3.0 License - see the `LICENSE` file for details.
+GPL-3.0
 
 ## Citation
 If you use this code or research in your work, please cite: [hopefully coming out soon :)]
