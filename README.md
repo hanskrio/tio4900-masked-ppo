@@ -1,87 +1,62 @@
-This project explores the application of Deep Reinforcement Learning, specifically Proximal Policy Optimization with action masking, to optimize the heating control of a simulated building environment. The goal is to develop an intelligent agent capable of minimizing energy consumption while maintaining occupant thermal comfort and ensuring stable system operation. The building environment is simulated using the BOPTEST framework.
+This project uses Maskable Proximal Policy Optimization (PPO) to train a reinforcement learning agent for controlling a heat pump in a building. The environment is provided by the **BOPTEST** framework and is interfaced through a custom **`boptest-gym`** wrapper.
 
-This repository contains the code for:
-*   The custom BOPTEST OpenAI Gym environment.
-*   The DRL agent training scripts using Stable Baselines3 (SB3) and MaskablePPO.
-*   Configuration files for experiments and ablation studies.
+The entire experimentation pipeline is managed with **Hydra**, enabling flexible configuration. Training is optimized for execution on a High-Performance Computing (HPC) cluster using **SLURM** and **Docker**.
 
 ## Features
 
-*   **Custom BOPTEST Gym Environment:** A tailored `gym.Env` interface for interacting with BOPTEST test cases.
-    *   Configurable observation and action spaces.
-    *   Support for predictive forecasts (e.g., weather, occupancy).
-    *   Customizable reward functions (e.g., weighted discomfort and energy cost).
-*   **Maskable PPO Agent:** Utilizes MaskablePPO from `sb3-contrib` to allow state-dependent action masking, guiding the agent towards safe and efficient policies.
-*   **Conditional Wrappers:** Environment wrappers for observation normalization and action discretization.
-*   **Configuration-Driven Experiments:** Uses Hydra for managing experiment configurations, allowing for easy sweeps and ablation studies.
+*   **Maskable PPO Agent**: Uses `sb3-contrib`'s MaskablePPO to enforce state-based action constraints, ensuring the agent makes valid control decisions.
+*   **BOPTEST Gym Environment**: A custom `gymnasium.Env` wrapper (`boptestgym`) for seamless interaction with BOPTEST simulation test cases.
+*   **Hydra for Configuration**: All parameters—for the environment, model, and training—are managed through YAML files, allowing for easy and reproducible experiments.
+*   **SLURM-based HPC Training**: Includes scripts for submitting and running massively parallel training jobs on a SLURM-based cluster, automating Docker-based environment deployment.
 
 ## Project Structure
-The main DRL logic and package is within the `masked_ppo/` directory.
 
-## Setup and Installation
+The project is organized into a main installable package and supporting scripts.
 
-**1. Prerequisites:**
-    *   Python 3.10.16
-    *   Conda (recommended for managing environments) or pip
-    *   Access to a running BOPTEST server instance for the desired test case.
-    *   [Optional: SLURM for cluster execution]
+tio4900-masked-ppo/
+│
+├── masked_ppo/ # Main installable Python package
+│ ├── configs/ # Hydra configuration files for experiments
+│ ├── envs/ # Custom environment creation logic (boptestgym)
+│ ├── scripts/ # Entry points for training and evaluation
+│ └── src/ # Core source code (models, runners, utils)
+│
+├── environment_linux.yml # Conda environment for HPC/Linux
+├── environment.yml # Conda environment for macOS
+├── setup.py # Makes masked_ppo an installable package
+└── submit_training.slurm # SLURM script for submitting HPC jobs
 
-**2. Clone the Repository:**
-    ```bash
-    git clone https://github.com/hanskrio/tio4900-masked-ppo.git
-    cd tio4900-masked-ppo
-    ```
+## Installation
 
-**3. Set up the Python Environment:**
-  It is recommended to use the provided Conda environment files:
-    ```bash
-    # For general use (macOS):
-    conda env create -f environment.yml
-    # Or for Linux-specific environment or hpc cluster:
-    # conda env create -f environment_linux.yml
-    conda activate boptestgym
-    ```
-    After activating the environment, install the `masked_ppo` package locally in editable mode:
-    ```bash
-    pip install -e ./masked_ppo
-    ```
-    *(This assumes your `masked_ppo/setup.py` is configured correctly. If you don't have a `setup.py` for `masked_ppo` or don't intend it to be an installable package, you might run scripts directly by adjusting Python paths or running from within the `masked_ppo` directory).*
+**1. Prerequisites**
+*   Python 3.10
+*   [Conda](https://docs.conda.io/en/latest/miniconda.html)
+*   [Docker](https://www.docker.com/get-started) (for running the BOPTEST simulation environment)
 
-**4. BOPTEST Server:**
-    Ensure your BOPTEST server is running and accessible. Update the `url` in `configs/env/boptest_hvac.yaml` (or your relevant environment configuration) to point to your BOPTEST server instance and specify the correct `testcase`.
-    Example BOPTEST Docker command:
-    ```bash
-    docker run -p [host_port]:5000 ghcr.io/ibpsa/boptest-bestest_hydronic_heat_pump:latest
-    ```
-    *(Remember to update `[host_port]` and the image name if different)*
+**2. Clone Repository**
+```
+git clone https://github.com/hanskrio/tio4900-masked-ppo.git
+cd tio4900-masked-ppo
+```
+**3.  Create Conda Environment**
+A local conda environment is recommended. This command will create it inside the ./conda_env directory.
 
-## Running Experiments
+*For Linux or HPC:*
+```
+conda env create -f environment_linux.yml --prefix ./conda_env
+```
 
-Experiments are managed using [Hydra](https://hydra.cc/). The main training script is `scripts/train.py`.
+*For macOS*
+```
+conda env create -f environment.yml --prefix ./conda_env
+```
 
-**1. Basic Training Run (using default config):**
-    ```bash
-    python scripts/train.py.py
-    ```
-
-**Configuration Files:**
-*   `configs/config.yaml`: Top-level configuration, sets defaults and can include other configs.
-*   `configs/env/boptest_hvac.yaml`: Parameters specific to the BOPTEST environment (URL, testcase, observation/action details, wrapper toggles, reward weights, etc.).
-*   `configs/experiment/`: Contains configurations for specific experimental setups (e.g., different agent hyperparameters, masking strategies, ablation study settings).
-
-## Key Code Components
-
-*   **`envs/boptest_env/boptestGymEnv.py`:**
-    *   `BoptestGymEnv`: The core class implementing the `gym.Env` interface for BOPTEST. Handles API communication, observation/action processing, and reward calculation.
-    *   `BoptestGymEnvRewardWeightDiscomfort`: A subclass specifying a particular reward formulation.
-    *   `NormalizedObservationWrapper`: Normalizes observations.
-    *   `DiscretizedActionWrapper`: Discretizes continuous actions and implements the action masking logic.
-*   **`envs/boptest_env.py`:**
-    *   `make_boptest_env`: Factory function to create single or vectorized BOPTEST environments, applying specified wrappers.
-*   **`scripts/train.py`:**
-    *   Main script for initializing the agent, and running the training loop using Stable Baselines3.
-    *   Integrates with Hydra for configuration management.
-
+**4. Activate environment and intall package**
+Activate the environment and install the masked_ppo package in editable mode. This allows you to make changes to the source code without reinstalling.
+```
+conda activate ./conda_env
+pip install -e .
+```
 
 ## License
 GPL-3.0
