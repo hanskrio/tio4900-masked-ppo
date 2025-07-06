@@ -1,4 +1,4 @@
-This project explores the application of Deep Reinforcement Learning (DRL), specifically Proximal Policy Optimization (PPO) with action masking, to optimize the heating control of a simulated building environment. The goal is to develop an intelligent agent capable of minimizing energy consumption while maintaining occupant thermal comfort and ensuring stable system operation. The building environment is simulated using the BOPTEST framework.
+This project explores the application of Deep Reinforcement Learning, specifically Proximal Policy Optimization with action masking, to optimize the heating control of a simulated building environment. The goal is to develop an intelligent agent capable of minimizing energy consumption while maintaining occupant thermal comfort and ensuring stable system operation. The building environment is simulated using the BOPTEST framework.
 
 This repository contains the code for:
 *   The custom BOPTEST OpenAI Gym environment.
