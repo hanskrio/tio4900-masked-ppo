@@ -97,17 +97,16 @@ Experiments are managed using [Hydra](https://hydra.cc/). The main training scri
 
 ## Key Code Components
 
-*   **`src/environments/boptestGymEnv.py`:**
+*   **`envs/boptest_env/boptestGymEnv.py`:**
     *   `BoptestGymEnv`: The core class implementing the `gym.Env` interface for BOPTEST. Handles API communication, observation/action processing, and reward calculation.
     *   `BoptestGymEnvRewardWeightDiscomfort`: A subclass specifying a particular reward formulation.
     *   `NormalizedObservationWrapper`: Normalizes observations.
     *   `DiscretizedActionWrapper`: Discretizes continuous actions and implements the action masking logic.
-*   **`src/environments/boptest_env.py`:**
+*   **`envs/boptest_env.py`:**
     *   `make_boptest_env`: Factory function to create single or vectorized BOPTEST environments, applying specified wrappers.
-*   **`src/training/train_ppo.py`:**
-    *   Main script for initializing the environment and agent, and running the training loop using Stable Baselines3.
+*   **`scripts/train.py`:**
+    *   Main script for initializing the agent, and running the training loop using Stable Baselines3.
     *   Integrates with Hydra for configuration management.
-    *   [Integrates with `wandb` or other logging tools].
 
 
 ## License
