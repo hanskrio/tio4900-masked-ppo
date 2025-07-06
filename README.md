@@ -12,7 +12,7 @@ The entire experimentation pipeline is managed with **Hydra**, enabling flexible
 ## Project Structure
 
 The project is organized into a main installable package and supporting scripts.
-
+```
 tio4900-masked-ppo/
 │
 ├── masked_ppo/ # Main installable Python package
@@ -25,7 +25,7 @@ tio4900-masked-ppo/
 ├── environment.yml # Conda environment for macOS
 ├── setup.py # Makes masked_ppo an installable package
 └── submit_training.slurm # SLURM script for submitting HPC jobs
-
+```
 ## Installation
 
 **1. Prerequisites**
