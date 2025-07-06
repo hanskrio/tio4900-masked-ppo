@@ -91,7 +91,6 @@ Open submit_training.slurm and adjust job parameters (e.g., --time, --mem, --gre
 From the project root directory (tio4900-masked-ppo), submit the job to the SLURM scheduler.
 ```
 sbatch submit_training.slurm
-
 ```
 The script will:
 1. Request resources on the cluster.
