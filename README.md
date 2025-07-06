@@ -28,7 +28,7 @@ The main DRL logic and package is within the `masked_ppo/` directory.
 
 **2. Clone the Repository:**
     ```bash
-    git clone [[Your Repository URL: https://github.com/hanskrio/tio4900-masked-ppo.git]](https://github.com/hanskrio/tio4900-masked-ppo.git)
+    git clone https://github.com/hanskrio/tio4900-masked-ppo.git
     cd tio4900-masked-ppo
     ```
 
@@ -39,7 +39,7 @@ The main DRL logic and package is within the `masked_ppo/` directory.
     conda env create -f environment.yml
     # Or for Linux-specific environment or hpc cluster:
     # conda env create -f environment_linux.yml
-    conda activate [your-env-name] # (The name is usually defined inside the .yml file)
+    conda activate boptestgym
     ```
     After activating the environment, install the `masked_ppo` package locally in editable mode:
     ```bash
