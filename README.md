@@ -16,7 +16,7 @@ This repository contains the code for:
 *   **Configuration-Driven Experiments:** Uses Hydra for managing experiment configurations, allowing for easy sweeps and ablation studies.
 
 ## Project Structure
-The main DRL logic and package is within the `masked_ppo/` directory:
+The main DRL logic and package is within the `masked_ppo/` directory.
 
 ## Setup and Installation
 
