@@ -4,7 +4,6 @@ This repository contains the code for:
 *   The custom BOPTEST OpenAI Gym environment.
 *   The DRL agent training scripts using Stable Baselines3 (SB3) and MaskablePPO.
 *   Configuration files for experiments and ablation studies.
-*   [Potentially: Scripts for data analysis and plotting results].
 
 ## Features
 
