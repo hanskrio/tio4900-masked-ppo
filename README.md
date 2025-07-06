@@ -28,7 +28,7 @@ The main DRL logic and package is within the `masked_ppo/` directory.
 
 **2. Clone the Repository:**
     ```bash
-    git clone [Your Repository URL: https://github.com/hanskrio/tio4900-masked-ppo.git]
+    git clone [[Your Repository URL: https://github.com/hanskrio/tio4900-masked-ppo.git]](https://github.com/hanskrio/tio4900-masked-ppo.git)
     cd tio4900-masked-ppo
     ```
 
