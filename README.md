@@ -55,12 +55,6 @@ The main DRL logic and package is within the `masked_ppo/` directory.
     ```
     *(Remember to update `[host_port]` and the image name if different)*
 
-**5. [Optional: Weights & Biases Setup]**
-    If using `wandb` for logging:
-    *   Sign up at [wandb.ai](https://wandb.ai).
-    *   Log in via the CLI: `wandb login`
-    *   Update `wandb` project/entity names in `configs/main_config.yaml` or the training script.
-
 ## Running Experiments
 
 Experiments are managed using [Hydra](https://hydra.cc/). The main training script is `scripts/train.py`.
@@ -70,28 +64,8 @@ Experiments are managed using [Hydra](https://hydra.cc/). The main training scri
     python scripts/train.py.py
     ```
 
-**2. Overriding Configuration Parameters:**
-    You can override any parameter from the configuration files via the command line.
-    ```bash
-    # Example: Change learning rate and number of timesteps
-    python src/training/train_ppo.py learning_rate=0.0001 total_timesteps=2000000
-
-    # Example: Select a specific experiment configuration
-    python src/training/train_ppo.py experiment=my_ablation_study_config
-
-    # Example: Disable action masking for a run
-    python src/training/train_ppo.py env.discretize_actions=false env.normalize_observations=true agent=ppo # Assuming 'ppo' config doesn't use MaskablePPO
-    ```
-
-**3. Multi-run for Sweeps (Hydra's sweeper):**
-    ```bash
-    # Example: Sweep over learning rates
-    python src/training/train_ppo.py -m learning_rate=0.0001,0.0003,0.00005
-    ```
-    *(see Hydra documentation for more advanced sweeper configurations)*
-
 **Configuration Files:**
-*   `configs/main_config.yaml`: Top-level configuration, sets defaults and can include other configs.
+*   `configs/config.yaml`: Top-level configuration, sets defaults and can include other configs.
 *   `configs/env/boptest_hvac.yaml`: Parameters specific to the BOPTEST environment (URL, testcase, observation/action details, wrapper toggles, reward weights, etc.).
 *   `configs/experiment/`: Contains configurations for specific experimental setups (e.g., different agent hyperparameters, masking strategies, ablation study settings).
 
