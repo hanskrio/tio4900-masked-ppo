@@ -12,7 +12,7 @@ This repository contains the code for:
     *   Support for predictive forecasts (e.g., weather, occupancy).
     *   Customizable reward functions (e.g., weighted discomfort and energy cost).
 *   **Maskable PPO Agent:** Utilizes MaskablePPO from `sb3-contrib` to allow state-dependent action masking, guiding the agent towards safe and efficient policies.
-*   **Conditional Wrappers:** Environment wrappers for observation normalization and action discretization that can be toggled via configuration.
+*   **Conditional Wrappers:** Environment wrappers for observation normalization and action discretization.
 *   **Configuration-Driven Experiments:** Uses Hydra for managing experiment configurations, allowing for easy sweeps and ablation studies.
 
 ## Project Structure
@@ -35,9 +35,9 @@ The main DRL logic and package is within the `masked_ppo/` directory:
 **3. Set up the Python Environment:**
   It is recommended to use the provided Conda environment files:
     ```bash
-    # For general use:
+    # For general use (macOS):
     conda env create -f environment.yml
-    # Or for Linux-specific environment:
+    # Or for Linux-specific environment or hpc cluster:
     # conda env create -f environment_linux.yml
     conda activate [your-env-name] # (The name is usually defined inside the .yml file)
     ```
@@ -63,11 +63,11 @@ The main DRL logic and package is within the `masked_ppo/` directory:
 
 ## Running Experiments
 
-Experiments are managed using [Hydra](https://hydra.cc/). The main training script is `src/training/train_ppo.py`.
+Experiments are managed using [Hydra](https://hydra.cc/). The main training script is `scripts/train.py`.
 
 **1. Basic Training Run (using default config):**
     ```bash
-    python src/training/train_ppo.py
+    python scripts/train.py.py
     ```
 
 **2. Overriding Configuration Parameters:**
